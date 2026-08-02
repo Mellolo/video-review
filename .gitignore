@@ -27,6 +27,7 @@ output_*/
 critique_result.json
 reference_image_*.png
 frame_*s.png
+视频审核/
 
 # ── Database ─────────────────────────────────────────────────────────────
 *.db

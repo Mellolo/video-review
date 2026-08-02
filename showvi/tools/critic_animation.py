@@ -1,5 +1,5 @@
 """
-动画审核工具 — 使用 DashScope qwen-vl-max 进行 6 维度视频质量评估。
+动画审核工具 — 使用 DashScope qwen-vl-max 进行 7 维度视频质量评估。
 
 输出结构化 JSON 报告，包含评分、问题时间戳和改进建议。
 可作为 Showvi agent 工具使用，也可独立调用。
@@ -28,6 +28,7 @@ CRITIQUE_ANIMATION_SCHEMA: Dict[str, Any] = {
         "visual_quality": {"type": "number", "minimum": 0, "maximum": 10},
         "pacing_timing": {"type": "number", "minimum": 0, "maximum": 10},
         "artistic_expression": {"type": "number", "minimum": 0, "maximum": 10},
+        "model_clipping": {"type": "number", "minimum": 0, "maximum": 10},
         "critical_issues": {
             "type": "array",
             "items": {
@@ -64,6 +65,7 @@ CRITIQUE_ANIMATION_SCHEMA: Dict[str, Any] = {
         "visual_quality",
         "pacing_timing",
         "artistic_expression",
+        "model_clipping",
         "critical_issues",
         "recommendation",
         "feedback",
@@ -80,7 +82,7 @@ def critique_animation_video(
 ) -> Dict[str, Any]:
     """对动画视频进行质量审核。
 
-    使用 DashScope qwen-vl-max 模型分析视频内容，按 6 大维度评分，
+    使用 DashScope qwen-vl-max 模型分析视频内容，按 7 大维度评分，
     标注关键问题时间戳，输出结构化 JSON 报告。
 
     Args:
@@ -118,7 +120,7 @@ def critique_animation_video(
     user_message = (
         f"请审核以下动画视频。\n\n"
         f"场景描述:\n{scene_description}\n\n"
-        f"请分析整个视频内容，按 6 大维度评分，标注关键问题时间戳。"
+        f"请分析整个视频内容，按 7 大维度评分，标注关键问题时间戳。"
         f"请仅输出有效的 JSON 对象，不要包含其他文字。"
     )
 
@@ -194,7 +196,7 @@ def _parse_critique_result(raw_text: str) -> Dict[str, Any]:
     required_fields = [
         "overall_score", "motion_fluidity", "character_consistency",
         "scene_accuracy", "visual_quality", "pacing_timing",
-        "artistic_expression", "recommendation", "feedback",
+        "artistic_expression", "model_clipping", "recommendation", "feedback",
     ]
     for field in required_fields:
         if field not in data:
@@ -204,7 +206,7 @@ def _parse_critique_result(raw_text: str) -> Dict[str, Any]:
     score_fields = [
         "overall_score", "motion_fluidity", "character_consistency",
         "scene_accuracy", "visual_quality", "pacing_timing",
-        "artistic_expression",
+        "artistic_expression", "model_clipping",
     ]
     for field in score_fields:
         v = data.get(field, 0)

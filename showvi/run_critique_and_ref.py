@@ -3,7 +3,7 @@
 端到端审核 + 参考图生成编排脚本。
 
 两阶段流程:
-  Phase 1: 视频审核 — 使用 DashScope qwen-vl-max 进行 6 维度评分
+  Phase 1: 视频审核 — 使用 DashScope qwen-vl-max 进行 7 维度评分
   Phase 2: 参考图生成 — 基于原视频帧 + 审核反馈，调用 DashScope 图片编辑 API
 
 用法:
@@ -94,7 +94,7 @@ def run_phase2_reference_image(
     video_path: str,
     scene_description: str,
     output_dir: str,
-    model_image: str = "qwen-image-2.0-pro-2026-06-22",
+    model_image: str = None,
 ) -> str:
     """Phase 2: 参考图生成（基于原视频帧编辑）。
 
@@ -108,20 +108,20 @@ def run_phase2_reference_image(
     Returns:
         生成的参考图路径
     """
-    from tools.reference_image_gen import generate_reference_image, _extract_critical_timestamps
+    from tools.reference_image_gen import generate_all_reference_images, _extract_critical_timestamps
 
     print("=" * 60)
     print("Phase 2: 参考图生成（基于原视频帧编辑）")
     print("=" * 60)
 
-    # 显示关键时间戳
+    # 显示所有关键时间戳
     timestamps = _extract_critical_timestamps(critique_data)
     if timestamps:
-        print(f"[REF IMAGE] Critical timestamp: {timestamps[0]}")
+        print(f"[REF IMAGE] 关键时间戳: {', '.join(timestamps)}")
 
     start_time = time.time()
     try:
-        ref_path = generate_reference_image(
+        ref_paths = generate_all_reference_images(
             critique_data=critique_data,
             video_path=video_path,
             scene_description=scene_description,
@@ -129,12 +129,12 @@ def run_phase2_reference_image(
             model_image=model_image,
         )
         elapsed = time.time() - start_time
-        print(f"[REF IMAGE] Done in {elapsed:.1f}s → {ref_path}")
-        return ref_path
+        print(f"\n[REF IMAGE] 完成，共生成 {len(ref_paths)} 张参考图，耗时 {elapsed:.1f}s")
+        return ref_paths
     except Exception as e:
         elapsed = time.time() - start_time
         print(f"[REF IMAGE] 失败 ({elapsed:.1f}s): {e}")
-        return ""
+        return []
 
 
 def main():
@@ -160,8 +160,8 @@ def main():
     )
     parser.add_argument(
         "--model-image", type=str,
-        default="qwen-image-2.0-pro-2026-06-22",
-        help="参考图生成模型（默认: qwen-image-2.0-pro-2026-06-22）",
+        default=None,
+        help="参考图生成模型（默认从 .env 读取 LLM_MODEL_IMAGE，回退 qwen-image-2.0-pro-2026-06-22）",
     )
     parser.add_argument(
         "--timeout", type=int, default=180,
@@ -180,6 +180,14 @@ def main():
     # ── 加载 .env ──
     _load_env_file(args.env)
 
+    # 图片模型：命令行 > .env (LLM_MODEL_IMAGE) > 内置默认
+    resolved_model_image = (
+        args.model_image
+        or os.environ.get("LLM_MODEL_IMAGE")
+        or os.environ.get("IMAGE_MODEL")
+        or "qwen-image-2.0-pro-2026-06-22"
+    )
+
     # ── 验证视频文件 ──
     video_path = str(Path(args.video).expanduser().resolve())
     if not Path(video_path).exists():
@@ -194,7 +202,7 @@ def main():
     print(f"场景: {args.scene}")
     print(f"输出: {output_dir}")
     print(f"审核模型: {args.model or os.environ.get('LLM_MODEL_VIDEO_CRITIQUE', 'qwen-vl-max')}")
-    print(f"图片模型: {args.model_image}")
+    print(f"图片模型: {resolved_model_image}")
     print()
 
     # ── Phase 1: 视频审核 ──
@@ -213,15 +221,15 @@ def main():
         sys.exit(1)
 
     # ── Phase 2: 参考图生成 ──
-    ref_path = ""
+    ref_paths = []
     if not args.skip_ref:
         try:
-            ref_path = run_phase2_reference_image(
+            ref_paths = run_phase2_reference_image(
                 critique_data=critique_data,
                 video_path=video_path,
                 scene_description=args.scene,
                 output_dir=output_dir,
-                model_image=args.model_image,
+                model_image=resolved_model_image,
             )
         except Exception as e:
             print(f"\n⚠ 参考图生成失败: {e}")
@@ -235,8 +243,10 @@ def main():
     print("=" * 60)
     print(f"审核评分: {critique_data['overall_score']}/10 ({critique_data['recommendation']})")
     print(f"审核报告: {Path(output_dir) / 'critique_result.json'}")
-    if ref_path:
-        print(f"参考图: {ref_path}")
+    if ref_paths:
+        print(f"参考图: {len(ref_paths)} 张")
+        for p in ref_paths:
+            print(f"  → {p}")
     else:
         print("参考图: 未生成（跳过或失败）")
 

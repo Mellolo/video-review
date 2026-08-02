@@ -14,6 +14,7 @@
 import base64
 import json
 import logging
+import mimetypes
 import os
 import subprocess
 import tempfile
@@ -28,8 +29,17 @@ _logger = logging.getLogger("video_agent.reference_image_gen")
 
 # ── DashScope 图片编辑 API ─────────────────────────────────────────────
 
-DASHSCOPE_IMAGE_API = "https://dashscope.aliyuncs.com/api/v1/services/aigc/image-generation/generation"
-DEFAULT_IMAGE_MODEL = "qwen-image-2.0-pro-2026-06-22"
+DASHSCOPE_IMAGE_API = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+
+
+def _get_default_image_model() -> str:
+    """从 .env 读取默认图片模型，优先级: LLM_MODEL_IMAGE > IMAGE_MODEL > 内置默认。"""
+    _load_env_file()
+    return (
+        os.environ.get("LLM_MODEL_IMAGE")
+        or os.environ.get("IMAGE_MODEL")
+        or "qwen-image-2.0-pro-2026-06-22"
+    )
 
 
 def _env(key: str, default: str = "") -> str:
@@ -60,15 +70,12 @@ def generate_reference_image(
     video_path: str,
     scene_description: str,
     output_dir: str = "./output",
-    model_image: str = DEFAULT_IMAGE_MODEL,
+    model_image: str = None,
     api_key: Optional[str] = None,
 ) -> str:
-    """基于审核结果和原视频帧生成参考图。
+    """基于审核结果和原视频帧生成参考图（第一个关键时间戳）。
 
-    1. 从审核结果中提取关键时间戳
-    2. 用 ffmpeg 从视频提取该帧
-    3. 调用 DashScope 图片编辑 API 对帧进行优化
-    4. 保存参考图
+    如需为所有关键问题点生成参考图，请使用 generate_all_reference_images()。
 
     Args:
         critique_data: 审核结果 JSON（来自 critic_animation）
@@ -85,58 +92,114 @@ def generate_reference_image(
         FileNotFoundError: 视频文件不存在
         RuntimeError: 帧提取或图片编辑失败
     """
+    results = generate_all_reference_images(
+        critique_data=critique_data,
+        video_path=video_path,
+        scene_description=scene_description,
+        output_dir=output_dir,
+        model_image=model_image,
+        api_key=api_key,
+        max_images=1,
+    )
+    return results[0] if results else ""
+
+
+def generate_all_reference_images(
+    critique_data: Dict[str, Any],
+    video_path: str,
+    scene_description: str,
+    output_dir: str = "./output",
+    model_image: str = None,
+    api_key: Optional[str] = None,
+    max_images: int = 6,
+) -> List[str]:
+    """为审核报告中所有关键问题点生成参考图。
+
+    遍历 critical_timestamps（以及 critical_issues 中的时间戳），
+    逐个提取帧并调用 DashScope 图片编辑 API 生成优化参考图。
+
+    Args:
+        critique_data: 审核结果 JSON
+        video_path: 原视频文件路径
+        scene_description: 场景描述
+        output_dir: 输出目录
+        model_image: 图片编辑模型名称
+        api_key: DashScope API Key
+        max_images: 最多生成的参考图数量（默认 6）
+
+    Returns:
+        生成的参考图文件路径列表
+    """
     _load_env_file()
 
-    # 确保输出目录存在
+    model_image = model_image or _get_default_image_model()
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    # 获取 API Key
     resolved_key = api_key or _env("LLM_API_KEY")
     if not resolved_key:
         raise ValueError("LLM_API_KEY 未设置，请在 .env 中配置")
 
-    # 验证视频文件
     if not Path(video_path).exists():
         raise FileNotFoundError(f"视频文件不存在: {video_path}")
 
-    # ── Step 1: 提取关键时间戳 ──
+    # ── 提取关键时间戳及对应问题 ──
     critical_timestamps = _extract_critical_timestamps(critique_data)
     if not critical_timestamps:
-        # 如果没有关键时间戳，使用视频中点
         duration = _get_video_duration(video_path)
         target_ts = duration / 2 if duration > 0 else 0
+        critical_timestamps = [f"{int(target_ts // 60):02d}:{int(target_ts % 60):02d}"]
         print(f"[REF IMAGE] 无关键时间戳，使用视频中点: {target_ts:.1f}s")
-    else:
-        # 使用第一个关键时间戳
-        target_ts = _timestamp_to_seconds(critical_timestamps[0])
-        print(f"[REF IMAGE] 关键时间戳: {critical_timestamps[0]} ({target_ts:.1f}s)")
 
-    # ── Step 2: 从视频提取帧 ──
-    frame_path = _extract_video_frame(video_path, target_ts, output_dir)
-    print(f"[REF IMAGE] 已提取帧: {frame_path}")
+    # 限制数量
+    timestamps_to_process = critical_timestamps[:max_images]
+    print(f"[REF IMAGE] 将为 {len(timestamps_to_process)} 个关键时间戳生成参考图")
 
-    # ── Step 3: 构建图片编辑 prompt ──
-    edit_prompt = _build_edit_prompt(critique_data, scene_description)
-    print(f"[REF IMAGE] 编辑 prompt: {edit_prompt[:100]}...")
+    # 构建时间戳→问题描述的映射
+    issue_map: Dict[str, str] = {}
+    for issue in critique_data.get("critical_issues", []):
+        if isinstance(issue, dict) and issue.get("timestamp"):
+            ts = issue["timestamp"]
+            desc = issue.get("description", "")
+            dim = issue.get("dimension", "")
+            issue_map[ts] = f"{dim}: {desc}" if dim else desc
 
-    # ── Step 4: 调用 DashScope 图片编辑 API ──
-    start_time = time.time()
-    image_url = _call_dashscope_image_edit(
-        frame_path=frame_path,
-        prompt=edit_prompt,
-        model=model_image,
-        api_key=resolved_key,
-    )
+    results: List[str] = []
 
-    # ── Step 5: 下载并保存参考图 ──
-    output_path = _download_image(
-        image_url, output_dir, prefix="reference_image"
-    )
+    for i, ts in enumerate(timestamps_to_process, 1):
+        target_ts = _timestamp_to_seconds(ts)
+        print(f"\n[REF IMAGE] ({i}/{len(timestamps_to_process)}) 时间戳: {ts} ({target_ts:.1f}s)")
 
-    elapsed = time.time() - start_time
-    print(f"[REF IMAGE] Done in {elapsed:.1f}s → {output_path}")
+        # 提取帧
+        frame_path = _extract_video_frame(video_path, target_ts, output_dir)
+        print(f"[REF IMAGE] 已提取帧: {frame_path}")
 
-    return output_path
+        # 构建针对该时间戳的 prompt
+        issue_desc = issue_map.get(ts, "")
+        edit_prompt = _build_edit_prompt(critique_data, scene_description, issue_desc=issue_desc)
+        print(f"[REF IMAGE] 编辑 prompt: {edit_prompt[:100]}...")
+
+        # 调用 API
+        start_time = time.time()
+        try:
+            image_url = _call_dashscope_image_edit(
+                frame_path=frame_path,
+                prompt=edit_prompt,
+                model=model_image,
+                api_key=resolved_key,
+            )
+            # 下载保存
+            ts_safe = ts.replace(":", "s")
+            output_path = _download_image(
+                image_url, output_dir, prefix=f"reference_image_{ts_safe}"
+            )
+            elapsed = time.time() - start_time
+            print(f"[REF IMAGE] Done in {elapsed:.1f}s → {output_path}")
+            results.append(output_path)
+        except Exception as e:
+            elapsed = time.time() - start_time
+            print(f"[REF IMAGE] 时间戳 {ts} 生成失败 ({elapsed:.1f}s): {e}")
+
+    return results
 
 
 # ── 内部工具方法 ──────────────────────────────────────────────────────
@@ -234,40 +297,43 @@ def _extract_video_frame(
 def _build_edit_prompt(
     critique_data: Dict[str, Any],
     scene_description: str,
+    issue_desc: str = "",
 ) -> str:
     """基于审核结果构建图片编辑 prompt。
 
     将审核中发现的问题转化为具体的图片修改指令，
     结合场景描述生成优化的参考图。
+    如果提供 issue_desc，则只针对该具体问题生成修改指令。
     """
     parts = [f"场景描述: {scene_description}\n"]
 
-    # 提取需要改进的问题
-    issues = []
-    for issue in critique_data.get("critical_issues", []):
-        if isinstance(issue, dict):
-            issues.append(f"- {issue.get('dimension', '')}: {issue.get('description', '')}")
-        elif isinstance(issue, str):
-            issues.append(f"- {issue}")
-
-    if issues:
+    if issue_desc:
+        # 针对特定时间戳的问题
         parts.append("需要改进的问题:")
-        parts.extend(issues)
+        parts.append(f"- {issue_desc}")
+    else:
+        # 列出所有关键问题
+        issues = []
+        for issue in critique_data.get("critical_issues", []):
+            if isinstance(issue, dict):
+                issues.append(f"- {issue.get('dimension', '')}: {issue.get('description', '')}")
+            elif isinstance(issue, str):
+                issues.append(f"- {issue}")
+        if issues:
+            parts.append("需要改进的问题:")
+            parts.extend(issues)
 
     # 添加改进建议
     suggestions = critique_data.get("improvement_suggestions", "")
     if suggestions:
         parts.append(f"\n改进建议: {suggestions}")
 
-    # 添加审核反馈
-    feedback = critique_data.get("feedback", "")
-    if feedback:
-        parts.append(f"\n审核反馈: {feedback}")
-
-    # 构建最终的图片编辑指令
+    # 构建最终图片编辑指令——强调最小化修改
     parts.append(
-        "\n请基于此帧生成优化的参考图，修正上述问题，"
-        "提升画面质量和角色一致性，保持场景描述中的关键元素。"
+        "\n请以这张图片为基准进行最小化修改。"
+        "仅修正上述具体问题，不要改变以下内容："
+        "构图与取景、角色姿势与表情、场景布局与背景、整体色调与风格。"
+        "保持与原图高度一致，仅对问题部位做局部修正。"
     )
 
     return "\n".join(parts)
@@ -296,22 +362,34 @@ def _call_dashscope_image_edit(
     Raises:
         RuntimeError: API 调用失败
     """
-    # 读取帧图片并转为 base64
+    # 读取帧图片并转为 base64 data URL（自动检测 MIME 类型）
+    mime_type, _ = mimetypes.guess_type(frame_path)
+    if not mime_type or not mime_type.startswith("image/"):
+        mime_type = "image/png"
     with open(frame_path, "rb") as f:
         frame_bytes = f.read()
     frame_b64 = base64.b64encode(frame_bytes).decode("utf-8")
-    ref_image = f"data:image/png;base64,{frame_b64}"
+    image_data = f"data:{mime_type};base64,{frame_b64}"
 
-    # 构建请求体
+    # 构建多模态对话请求体（DashScope 千问图像编辑 API）
     payload = {
         "model": model,
         "input": {
-            "prompt": prompt,
-            "ref_image": ref_image,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"image": image_data},
+                        {"text": prompt},
+                    ],
+                }
+            ]
         },
         "parameters": {
-            "size": "1024*1024",
             "n": 1,
+            "negative_prompt": "改变构图、改变角色姿势、改变场景布局、风格突变、重新创作画面",
+            "prompt_extend": False,
+            "watermark": False,
         },
     }
 
@@ -322,11 +400,11 @@ def _call_dashscope_image_edit(
 
     _logger.info("调用 DashScope 图片编辑 API (model=%s)", model)
 
-    # 调用 API（带重试）
+    # 调用 API（带重试，图片编辑可能需要较长时间）
     max_retries = 3
     for attempt in range(1, max_retries + 1):
         try:
-            with httpx.Client(timeout=180.0) as client:
+            with httpx.Client(timeout=300.0) as client:
                 response = client.post(
                     DASHSCOPE_IMAGE_API,
                     json=payload,
