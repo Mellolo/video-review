@@ -1,0 +1,118 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Showvi — .gitignore
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ── Virtual environments ─────────────────────────────────────────────────
+venv/
+env/
+ENV/
+.venv/
+
+# ── IDE / OS ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Secrets & credentials ────────────────────────────────────────────────
+.env
+.env.local
+.env.production
+*.key
+credentials.json
+secrets.json
+credentials/
+data-audio-*.json
+*-b740db8d32b9.json
+.secret_key
+.internal_secret
+
+# ── Runtime state (dashboard job queues, DB, locks) ──────────────────────
+.dashboard/
+dashboard/uploads/
+
+# ── User data (per-user workspaces) ──────────────────────────────────────
+data/
+
+# ── Generated storyboards (user content, not source code) ────────────────
+storyboards/
+
+# ── Output / generated content ───────────────────────────────────────────
+output/
+editor_output/
+asset_library/
+assets/*
+!assets/readme/
+test/
+
+# ── Demo videos ──────────────────────────────────────────────────────────
+demos/
+
+# ── Media files ──────────────────────────────────────────────────────────
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.png
+!assets/readme/*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.bmp
+*.tiff
+*.mp3
+*.wav
+*.ogg
+*.flac
+*.aac
+frames_*/
+
+# ── Allow dashboard static assets ────────────────────────────────────────
+!dashboard/static/img/
+!dashboard/static/img/**
+
+# ── Database files ───────────────────────────────────────────────────────
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# ── Lock files ───────────────────────────────────────────────────────────
+*.lock
+
+# ── Logs & reports ───────────────────────────────────────────────────────
+*.log
+*_report.json
+
+# ── Testing ──────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/

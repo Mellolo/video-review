@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="app.title">Showvi AI — Dashboard</title>
+<link rel="icon" href="/static/img/logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/variables.css">
+<link rel="stylesheet" href="/static/css/layout.css">
+<link rel="stylesheet" href="/static/css/monitor.css">
+<link rel="stylesheet" href="/static/css/modals.css">
+<link rel="stylesheet" href="/static/css/create.css?v=2">
+<link rel="stylesheet" href="/static/css/assets.css">
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="app" id="app">
+
+  <!-- Left Navigation Rail -->
+  <nav class="nav-rail">
+    <div class="nav-logo" onclick="switchTab('create')" style="cursor:pointer" title="Home"><img src="/static/img/logo.jpg" alt="Showvi" class="nav-logo-img"></div>
+    <button class="nav-btn" data-tab="create" onclick="switchTab('create')" title="Home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span data-i18n="nav.home">首页</span>
+    </button>
+    <button class="nav-btn" data-tab="pipeline" onclick="switchTab('pipeline')" title="Pipeline">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      <span data-i18n="nav.pipeline">剧本生成</span>
+    </button>
+    <button class="nav-btn" data-tab="monitor" onclick="monitorBrowseMode=null; switchTab('monitor')" title="Creation Desk">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <span data-i18n="nav.monitor">创作台</span>
+    </button>
+    <button class="nav-btn" data-tab="storyboards" onclick="switchTab('storyboards')" title="Storyboards">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      <span data-i18n="nav.storyboards">剧本</span>
+    </button>
+    <button class="nav-btn" data-tab="assets" onclick="switchTab('assets')" title="Assets">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      <span data-i18n="nav.assets">素材</span>
+    </button>
+    <button class="nav-btn" data-tab="repo" onclick="switchTab('repo')" title="History">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 002-2V8a2 2 0 00-2-2h-7.93a2 2 0 01-1.66-.9l-.82-1.2A2 2 0 007.93 3H4a2 2 0 00-2 2v13c0 1.1.9 2 2 2z"/></svg>
+      <span data-i18n="nav.history">历史</span>
+    </button>
+    <div class="nav-spacer"></div>
+    <div class="nav-tutorial-stack">
+      <button class="nav-tutorial-btn" onclick="openTutorialModal()" data-i18n-title="nav.tutorial_title" title="使用说明">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-linecap="round" stroke-width="2.5"/></svg>
+        <span data-i18n="nav.tutorial">教程</span>
+      </button>
+      <button class="nav-tutorial-btn" id="settings-nav-btn" onclick="openSettingsModal()" title="系统设置">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span data-i18n="nav.settings">设置</span>
+      </button>
+    </div>
+    <button class="nav-btn" id="lang-toggle-btn" onclick="toggleLang()" title="Switch Language" style="margin-top:4px;font-size:11px;font-weight:700;letter-spacing:0.5px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+      <span id="lang-label">EN</span>
+    </button>
+  </nav>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+
+  <!-- Hidden topbar elements we still need for logic -->
+  <span id="project-title" style="display:none"></span>
+  <span id="current-project-name" style="display:none">Projects</span>
+
+  <!-- Projects Drawer -->
+  <div class="drawer-backdrop" id="drawer-backdrop" onclick="toggleDrawer(false)"></div>
+  <div class="projects-drawer" id="projects-drawer">
+    <div class="drawer-header">
+      <span class="drawer-title" data-i18n="drawer.title">项目</span>
+      <span class="drawer-count" id="drawer-count">0 projects</span>
+    </div>
+    <div class="drawer-list" id="drawer-list"></div>
+  </div>
+
+  <!-- hidden run select for data -->
+  <select class="run-select" id="run-select" style="display:none"><option value="">No runs</option></select>
+
+  <!-- ═══ View: Monitor ═══ -->
+  <div id="view-monitor" class="view">
+    <div class="monitor-header">
+      <div class="monitor-title-text" data-i18n="monitor.title">创作台</div>
+      <div style="flex:1"></div>
+    </div>
+    <div id="monitor-active-jobs" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <!-- Active jobs list + selected job detail will be rendered here -->
+    </div>
+  </div>
+
+  <!-- ═══ View: Create (Home / Form only) ═══ -->
+  <div id="view-create" class="view active">
+    <div class="create-container">
+      <div class="create-hero" id="create-home-hero">
+        <!-- 半透明循环视频背景 -->
+        <video class="create-hero-video" autoplay loop muted playsinline>
+          <source src="/static/hero-bg.mp4" type="video/mp4">
+        </video>
+        <div class="create-hero-grid">
+          <div class="create-hero-copy">
+            <div class="create-hero-badge" data-i18n="hero.badge">SHOWVI AI</div>
+            <h1 class="create-hero-title">
+              <span class="create-hero-title-main" data-i18n="hero.title_main">从一句创意开始</span>
+              <span class="create-hero-title-highlight" data-i18n="hero.title_highlight">一键生成分镜与成片</span>
+            </h1>
+            <p class="create-hero-subtitle" data-i18n="hero.subtitle">把小说、视频或一句灵感，快速转成可编辑分镜、统一角色素材，并生成带丝滑过渡的长视频。</p>
+            <div class="create-hero-actions">
+              <button class="create-hero-cta" onclick="document.getElementById('create-unified-entry')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">
+                <span data-i18n="hero.cta">立即开始创作</span>
+                <span>→</span>
+              </button>
+              <span class="create-hero-note" data-i18n="hero.note">开始创作适合与 Agent 协作推进，一键成片则由全流程 Agent 接管并直出视频。</span>
+            </div>
+          </div>
+          <div class="create-hero-cards-grid">
+            <div class="create-hero-card">
+              <div class="create-hero-card-label" data-i18n="hero.card_1_label">CONSISTENCY</div>
+              <div class="create-hero-card-value" data-i18n="hero.card_1_value">丝滑过渡与角色/场景一致性</div>
+              <div class="create-hero-card-sub" data-i18n="hero.card_1_sub">长视频生成过程中保持镜头衔接更自然，角色与场景设定更稳定，不容易跳戏。</div>
+            </div>
+            <div class="create-hero-card">
+              <div class="create-hero-card-label" data-i18n="hero.card_2_label">RECREATION</div>
+              <div class="create-hero-card-value" data-i18n="hero.card_2_value">热门长视频复刻</div>
+              <div class="create-hero-card-sub" data-i18n="hero.card_2_sub">从热门视频快速拆解并复刻长视频结构、节奏与画面感觉，适合二创和高效起盘。</div>
+            </div>
+            <div class="create-hero-card">
+              <div class="create-hero-card-label" data-i18n="hero.card_3_label">AGENT QA</div>
+              <div class="create-hero-card-value" data-i18n="hero.card_3_value">智能 Agent 自动质检与抽卡</div>
+              <div class="create-hero-card-sub" data-i18n="hero.card_3_sub">Agent 会自主完成质检、抽卡与多轮迭代优化，无需人工排队抽卡，直接交付成片。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unified Creation Entry ═══ -->
+      <div id="create-unified-entry">
+
+        <!-- Mode Cards Row -->
+        <div class="mode-cards-row">
+          <div class="mode-card-v2 active" data-mode="quickchat" onclick="switchMode('quickchat')">
+            <img src="/static/img/mode-quickchat.png" alt="" class="mode-card-bg" />
+            <div class="mode-card-overlay">
+              <span class="mode-card-label" data-i18n="create.mode.quickchat">一句话成片</span>
+              <span class="mode-card-sublabel" data-i18n="create.mode.quickchat_desc">输入创意，全流程自动成片</span>
+            </div>
+          </div>
+          <div class="mode-card-v2" data-mode="prompt" onclick="switchMode('prompt')">
+            <img src="/static/img/mode-prompt.png" alt="" class="mode-card-bg" />
+            <div class="mode-card-overlay">
+              <span class="mode-card-label" data-i18n="create.mode.prompt">创作模式</span>
+              <span class="mode-card-sublabel" data-i18n="create.mode.prompt_desc">从创意文字描述生成分镜</span>
+            </div>
+          </div>
+          <div class="mode-card-v2" data-mode="novel" onclick="switchMode('novel')">
+            <img src="/static/img/mode-novel.png" alt="" class="mode-card-bg" />
+            <div class="mode-card-overlay">
+              <span class="mode-card-label" data-i18n="create.mode.novel">小说模式</span>
+              <span class="mode-card-sublabel" data-i18n="create.mode.novel_desc">从小说章节或文本段落生成分镜</span>
+            </div>
+          </div>
+          <div class="mode-card-v2" data-mode="video" onclick="switchMode('video')">
+            <img src="/static/img/mode-video.png" alt="" class="mode-card-bg" />
+            <div class="mode-card-overlay">
+              <span class="mode-card-label" data-i18n="create.mode.video">视频模式</span>
+              <span class="mode-card-sublabel" data-i18n="create.mode.video_desc">复刻或二创现有视频为分镜</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Creation Body (shared skeleton) -->
+        <div class="creation-body">
+
+          <!-- File tag bar (novel mode only) -->
+          <div class="file-tag-bar" id="file-tag-bar" style="display:none">
+            <span class="file-tag">
+              <span id="file-tag-name"></span>
+              <button class="file-tag-remove" onclick="removeNovelFile()" title="移除文件">&times;</button>
+            </span>
+          </div>
+
+          <!-- Input area -->
+          <div class="input-area" id="input-area">
+            <!-- Textarea (quickchat / prompt / novel) -->
+            <textarea
+              class="unified-textarea"
+              id="unified-textarea"
+              rows="1"
+              data-i18n-placeholder="quickchat.placeholder"
+              placeholder="描述你的创意，例如：修仙少年雷劫中觉醒剑意，逆转乾坤，3D国漫风格，60秒..."
+              oninput="unifiedTextareaResize(this); updateUnifiedButtons()"
+              onkeydown="unifiedTextareaKeydown(event)"
+            ></textarea>
+
+            <!-- Video upload (video mode only) -->
+            <div class="unified-video-upload" id="unified-video-upload" style="display:none">
+              <div class="file-upload-zone" id="video-upload-zone" onclick="document.getElementById('video-file-input').click()">
+                <input type="file" id="video-file-input" accept="video/*" onchange="handleVideoUpload(this)" style="display:none" />
+                <div id="video-upload-hint" data-i18n="form.upload_video">点击或拖入视频文件</div>
+              </div>
+            </div>
+
+            <!-- Hidden novel file input -->
+            <input type="file" id="novel-file-input" accept=".txt,.md" onchange="handleNovelUpload(this)" style="display:none" />
+
+            <!-- Action buttons -->
+            <div class="input-action-area">
+              <!-- Novel upload button (novel mode only) -->
+              <button class="novel-upload-btn" id="novel-upload-btn" style="display:none" onclick="document.getElementById('novel-file-input').click()" title="上传 .txt / .md 文件">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+                </svg>
+              </button>
+
+              <!-- Seeddance model selector (custom dropdown) -->
+              <div class="sd-model-picker" id="seeddance-model-selector">
+                <!-- hidden real select for value reading -->
+                <select id="seeddance-model-select" style="display:none">
+                  <option value="seedance-2.0" selected></option>
+                  <option value="seedance-2.0-fast"></option>
+                  <option value="seedance-2.0-vip"></option>
+                  <option value="seedance-2.0-fast-vip"></option>
+                </select>
+                <button type="button" class="sd-model-trigger" id="sd-model-trigger" onclick="toggleSdModelMenu(event)">
+                  <span id="sd-model-label">Seedance 2.0</span>
+                  <svg viewBox="0 0 12 12" width="10" height="10"><polyline points="2,4 6,8 10,4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="sd-model-menu" id="sd-model-menu">
+                  <div class="sd-model-option active" data-value="seedance-2.0" onclick="selectSdModel(this)">
+                    <span class="sd-model-name">Seedance 2.0</span>
+                  </div>
+                  <div class="sd-model-option" data-value="seedance-2.0-fast" onclick="selectSdModel(this)">
+                    <span class="sd-model-name">Seedance 2.0 Fast</span>
+                  </div>
+                  <div class="sd-model-option" data-value="seedance-2.0-vip" onclick="selectSdModel(this)">
+                    <span class="sd-model-name">Seedance 2.0 VIP</span>
+                  </div>
+                  <div class="sd-model-option" data-value="seedance-2.0-fast-vip" onclick="selectSdModel(this)">
+                    <span class="sd-model-name">Seedance 2.0 Fast VIP</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick send button (quickchat mode) -->
+              <button class="quick-send-btn" id="quick-send-btn" onclick="quickChatSubmit()" data-i18n-title="quickchat.send_title" title="一键成片">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+
+              <!-- Split button (prompt / novel / video modes) -->
+              <div class="split-btn" id="split-btn" style="display:none">
+                <button class="split-btn-main" id="split-btn-main" onclick="splitBtnSubmit()">
+                  <span id="split-btn-label" data-i18n="create.one_click">一键成片</span>
+                </button>
+                <button class="split-btn-toggle" id="split-btn-toggle" onclick="toggleSplitMenu(event)">
+                  <svg viewBox="0 0 12 12" width="10" height="10"><polyline points="2,4 6,8 10,4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="split-btn-menu" id="split-btn-menu">
+                  <div class="split-btn-option has-tooltip" data-one-click="true" onclick="setSplitAction(true)">
+                    <span data-i18n="create.one_click">一键成片</span>
+                    <div class="split-tooltip" data-i18n="create.one_click_tip">Agent 全面负责，无需人工干预，更简便高效</div>
+                  </div>
+                  <div class="split-btn-option has-tooltip" data-one-click="false" onclick="setSplitAction(false)">
+                    <span data-i18n="create.start_gen">开始创作</span>
+                    <div class="split-tooltip" data-i18n="create.start_gen_tip">中间关键环节人工审核，与 Agent 交互创作，更自由可控</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hint chips (quickchat mode only) -->
+          <div class="hint-chips" id="hint-chips">
+            <span class="hint-chip" onclick="hintChipFill(this)" data-i18n="quickchat.hint1">修仙少年雷劫觉醒，逆转乾坤</span>
+            <span class="hint-chip" onclick="hintChipFill(this)" data-i18n="quickchat.hint2">都市精英穿越古代，运筹帷幄</span>
+            <span class="hint-chip" onclick="hintChipFill(this)" data-i18n="quickchat.hint3">末日废土中的最后一支军队</span>
+            <span class="hint-chip" onclick="hintChipFill(this)" data-i18n="quickchat.hint4">少女与机甲，星际逃亡之旅</span>
+          </div>
+
+          <!-- Extra fields (prompt / novel / video modes) -->
+          <div class="extra-fields" id="extra-fields" style="display:none">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" data-i18n="form.title">标题</label>
+                <input class="form-input" id="create-title" data-i18n-placeholder="form.title_placeholder" placeholder="留空则自动解析" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" data-i18n="form.style">风格</label>
+                <input class="form-input" id="create-style" data-i18n-placeholder="form.style_placeholder" placeholder="留空自动解析，也可输入风格文本" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" data-i18n="form.duration">时长（秒）</label>
+                <input class="form-input" id="create-duration" type="number" placeholder="60" value="60" />
+              </div>
+              <div class="form-group extra-fields-row2" id="extra-fields-row2" style="display:none">
+                <label class="form-label" data-i18n="form.mode">模式</label>
+                <select class="form-select" id="create-video-mode" onchange="toggleVideoRecreateDirection()">
+                  <option value="replicate" data-i18n="mode.replicate">复刻 (Replicate)</option>
+                  <option value="recreate" data-i18n="mode.recreate">二创 (Recreate)</option>
+                </select>
+              </div>
+            </div>
+            <!-- Recreate direction (video recreate only) -->
+            <div class="form-group" id="video-recreate-direction-group" style="display:none">
+              <label class="form-label" data-i18n="form.recreate_direction">二创方向（可选）</label>
+              <textarea class="form-textarea" id="create-video-recreate-direction" data-i18n-placeholder="form.recreate_direction_placeholder" placeholder="可提前告诉 AI 想往什么方向二创" rows="2"></textarea>
+            </div>
+          </div>
+
+          <span id="create-submit-status" style="font-size:12px;color:var(--text-muted)"></span>
+        </div>
+      </div>
+
+
+      <!-- Demo Video Gallery -->
+      <div id="demo-gallery-section">
+        <div class="section-title" style="margin-bottom:14px;font-size:13px" data-i18n="demo.title">我的作品</div>
+        <div class="demo-gallery-grid" id="demo-gallery-grid">
+          <!-- JS 动态渲染 -->
+        </div>
+      </div>
+
+    </div>
+  </div><!-- end view-create -->
+
+  <!-- ═══ View: Pipeline (screenplay generation + editor) ═══ -->
+  <div id="view-pipeline" class="view">
+    <div class="create-container">
+      <!-- Empty state (shown when no active job) -->
+      <div class="pipeline-empty-state" id="pipeline-empty-state">
+        <div style="text-align:center;padding:80px 20px;color:var(--text-muted)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;margin-bottom:16px;opacity:0.4"><path d="M12 5v14M5 12h14"/></svg>
+          <div style="font-size:15px;margin-bottom:12px" data-i18n="pipeline.empty">暂无剧本生成中</div>
+          <button class="btn-primary" onclick="switchTab('create')" style="font-size:13px;padding:8px 20px">
+            <span data-i18n="pipeline.go_create">去创建</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Pipeline stepper + content -->
+      <div class="create-pipeline" id="create-pipeline-phase">
+        <div class="pipeline-stepper" id="pipeline-stepper">
+          <div class="step-item" data-step="screenplay" id="step-screenplay" onclick="onStepClick('screenplay')">
+            <div class="step-icon">1</div>
+            <div class="step-info"><div class="step-title" data-i18n="pipeline.screenplay">剧本</div><div class="step-desc" data-i18n="pipeline.screenplay_desc">从素材生成剧本</div></div>
+          </div>
+          <div class="step-item" data-step="storyboard" id="step-storyboard" onclick="onStepClick('storyboard')" style="display:none">
+            <div class="step-icon">2</div>
+            <div class="step-info"><div class="step-title" data-i18n="pipeline.storyboard">分镜</div><div class="step-desc" data-i18n="pipeline.storyboard_desc">转换为视觉分镜</div></div>
+          </div>
+          <div class="step-item" data-step="done" id="step-done" onclick="onStepClick('done')" style="display:none">
+            <div class="step-icon">3</div>
+            <div class="step-info"><div class="step-title" data-i18n="pipeline.complete">完成</div><div class="step-desc" data-i18n="pipeline.complete_desc">最终分镜</div></div>
+          </div>
+        </div>
+        <div class="pipeline-content" id="pipeline-content">
+          <div class="pipeline-waiting"><div class="live-dot"></div> <span data-i18n="pipeline.waiting">等待生成开始...</span></div>
+        </div>
+      </div>
+
+      <!-- Editor -->
+      <div class="create-editor" id="create-editor-phase">
+        <div class="editor-sidebar" id="editor-sidebar">
+          <div class="editor-sidebar-section">
+            <div class="editor-sidebar-head">
+              <div class="editor-sidebar-title" data-i18n="editor.characters">角色</div>
+              <button class="editor-add-btn" onclick="openEntityEditor('character')" data-i18n="editor.add">新增</button>
+            </div>
+            <div id="editor-characters"></div>
+          </div>
+          <div class="editor-sidebar-section">
+            <div class="editor-sidebar-head">
+              <div class="editor-sidebar-title" data-i18n="editor.locations">场景</div>
+              <button class="editor-add-btn" onclick="openEntityEditor('location')" data-i18n="editor.add">新增</button>
+            </div>
+            <div id="editor-locations"></div>
+          </div>
+          <div class="editor-sidebar-section">
+            <div class="editor-sidebar-head">
+              <div class="editor-sidebar-title" data-i18n="editor.props">道具</div>
+              <button class="editor-add-btn" onclick="openEntityEditor('prop')" data-i18n="editor.add">新增</button>
+            </div>
+            <div id="editor-props"></div>
+          </div>
+        </div>
+        <div class="editor-main">
+          <div class="editor-main-header">
+            <div class="editor-header-main">
+              <input type="text" class="editor-title-input" id="editor-title" data-i18n-placeholder="editor.title_placeholder" placeholder="分镜标题" />
+              <div class="editor-duration-box">
+                <span class="editor-duration-label" data-i18n="editor.total_duration">总时长</span>
+                <input type="number" class="editor-duration-input" id="editor-total-duration" min="1" step="0.1" />
+                <span class="scene-duration-suffix" data-i18n="editor.seconds">秒</span>
+              </div>
+            </div>
+            <span style="font-size:12px;color:var(--text-muted)" id="editor-scene-count"></span>
+          </div>
+          <!-- Global style editor bar -->
+          <div class="editor-style-bar" id="editor-style-bar">
+            <span class="editor-style-bar-label" data-i18n="editor.global_style">全局风格</span>
+            <input type="text" id="editor-global-style-input" class="editor-style-bar-input" data-i18n-placeholder="editor.global_style_placeholder" placeholder="如：真人写实风格、3D CG动画风格..." />
+            <button class="btn-secondary editor-style-bar-btn" onclick="applyEditorGlobalStyle()" data-i18n="editor.apply_style">✦ 应用风格</button>
+          </div>
+          <div class="editor-scene-list" id="editor-scene-list"></div>
+          <div class="editor-actions">
+            <div style="display:flex;align-items:center;gap:8px;flex:1">
+              <button class="btn-secondary" onclick="createGoBack()">
+                <span data-i18n="editor.back_storyboard">返回剧本</span>
+              </button>
+              <button class="btn-primary" onclick="saveStoryboard()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px">
+                  <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span data-i18n="editor.save_only">仅保存</span>
+              </button>
+              <!-- Editor model selector (mirrors homepage, independent selection) -->
+              <div class="sd-model-picker" id="editor-model-selector">
+                <select id="editor-model-select" style="display:none">
+                  <option value="seedance-2.0" selected></option>
+                  <option value="seedance-2.0-fast"></option>
+                  <option value="seedance-2.0-vip"></option>
+                  <option value="seedance-2.0-fast-vip"></option>
+                </select>
+                <button type="button" class="sd-model-trigger" onclick="toggleEditorModelMenu(event)">
+                  <span id="editor-model-label">Seedance 2.0</span>
+                  <svg viewBox="0 0 12 12" width="10" height="10"><polyline points="2,4 6,8 10,4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="sd-model-menu" id="editor-model-menu">
+                  <div class="sd-model-option active" data-value="seedance-2.0" onclick="selectEditorModel(this)">
+                    <span class="sd-model-name">Seedance 2.0</span>
+                  </div>
+                  <div class="sd-model-option" data-value="seedance-2.0-fast" onclick="selectEditorModel(this)">
+                    <span class="sd-model-name">Seedance 2.0 Fast</span>
+                  </div>
+                  <div class="sd-model-option" data-value="seedance-2.0-vip" onclick="selectEditorModel(this)">
+                    <span class="sd-model-name">Seedance 2.0 VIP</span>
+                  </div>
+                  <div class="sd-model-option" data-value="seedance-2.0-fast-vip" onclick="selectEditorModel(this)">
+                    <span class="sd-model-name">Seedance 2.0 Fast VIP</span>
+                  </div>
+                </div>
+              </div>
+              <button class="btn-primary btn-generate-video" onclick="saveAndGenerate()" style="background:linear-gradient(135deg,#10b981,#059669);border-color:#059669">
+                <span style="margin-right:6px">▶</span> <span data-i18n="editor.save_generate">保存并生成</span>
+              </button>
+            </div>
+            <button class="btn-secondary" onclick="openInMonitor()" style="display:none" id="btn-open-monitor" data-i18n="editor.open_monitor">在创作台中打开</button>
+            <span id="editor-save-status" style="font-size:12px;color:var(--text-muted)"></span>
+          </div>
+        </div>
+      </div>
+
+      <input type="file" class="hidden-upload" id="entity-image-upload" accept="image/*" />
+    </div>
+  </div><!-- end view-pipeline -->
+
+  <!-- ═══ View: Assets Library ═══ -->
+  <div id="view-assets" class="view">
+    <div class="assets-header">
+      <div class="assets-header-top">
+        <div class="assets-title" data-i18n="assets.title">素材库</div>
+        <div class="assets-toolbar">
+          <button class="btn-primary assets-upload-btn" id="assets-upload-btn" onclick="openAssetUploadPicker()" data-i18n="assets.upload">上传本地图片</button>
+        </div>
+      </div>
+      <div class="assets-tabs">
+        <button class="assets-tab active" data-atype="characters" onclick="switchAssetTab('characters')">
+          <span data-i18n="assets.characters">角色</span> <span class="assets-tab-count" id="asset-count-characters">0</span>
+        </button>
+        <button class="assets-tab" data-atype="locations" onclick="switchAssetTab('locations')">
+          <span data-i18n="assets.locations">场景</span> <span class="assets-tab-count" id="asset-count-locations">0</span>
+        </button>
+        <button class="assets-tab" data-atype="props" onclick="switchAssetTab('props')">
+          <span data-i18n="assets.props">道具</span> <span class="assets-tab-count" id="asset-count-props">0</span>
+        </button>
+        <button class="assets-tab" data-atype="voices" onclick="switchAssetTab('voices')">
+          <span data-i18n="assets.voices">配音</span> <span class="assets-tab-count" id="asset-count-voices">0</span>
+        </button>
+      </div>
+    </div>
+    <div class="assets-body" id="assets-body">
+      <div style="color:var(--text-muted);font-size:14px;padding:20px" data-i18n="assets.loading">加载素材中...</div>
+    </div>
+  </div>
+
+  <!-- ═══ View: Storyboards ═══ -->
+  <div id="view-storyboards" class="view">
+    <div class="storyboards-page-header">
+      <div class="section-title" style="margin-bottom:14px;font-size:13px" data-i18n="nav.storyboards">我的剧本</div>
+    </div>
+    <div class="storyboard-list" id="storyboard-list">
+      <div style="color:var(--text-muted);font-size:13px;padding:12px" data-i18n="create.loading">加载中...</div>
+    </div>
+  </div>
+
+  <!-- ═══ View: Repository ═══ -->
+  <div id="view-repo" class="view">
+    <div class="repo-sidebar" id="repo-sidebar">
+      <div class="repo-sidebar-header">
+        <span data-i18n="repo.projects">项目</span>
+        <span id="repo-project-count" style="font-family:var(--font-mono)">0</span>
+      </div>
+      <div id="repo-project-list"></div>
+    </div>
+    <div class="repo-content" id="repo-content">
+      <div class="empty-state" id="repo-empty">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 20h16a2 2 0 002-2V8a2 2 0 00-2-2h-7.93a2 2 0 01-1.66-.9l-.82-1.2A2 2 0 007.93 3H4a2 2 0 00-2 2v13c0 1.1.9 2 2 2z"/></svg>
+        <div style="font-size:16px;font-weight:600" data-i18n="repo.select_project">选择一个项目</div>
+        <div data-i18n="repo.browse_hint">从侧边栏浏览历史生成</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Video Lightbox -->
+<div class="lightbox" id="video-lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+  <div class="lightbox-content"><video id="lightbox-video" controls></video></div>
+</div>
+<!-- Image Lightbox -->
+<div class="img-lightbox" id="img-lightbox" onclick="closeImgLightbox()">
+  <img id="img-lightbox-img" src="">
+</div>
+
+<!-- Entity Detail Modal (character / location / prop) -->
+<div class="unit-modal-backdrop" id="entity-detail-modal" onclick="if(event.target===this)closeEntityModal()" style="display:none">
+  <div class="unit-modal" style="max-width:640px;width:92vw">
+    <div class="unit-modal-header">
+      <div class="unit-modal-title" id="entity-modal-title" data-i18n="editor.manage_entity">角色详情</div>
+      <button class="unit-modal-close" onclick="closeEntityModal()">✕</button>
+    </div>
+    <div style="padding:20px 24px;overflow-y:auto;max-height:70vh" id="entity-modal-body"></div>
+  </div>
+</div>
+
+<!-- Editor Scene Detail Modal -->
+<div class="unit-modal-backdrop" id="editor-scene-modal" onclick="if(event.target===this)closeEditorSceneModal()">
+  <div class="unit-modal">
+    <div class="unit-modal-header">
+      <div class="unit-modal-nav">
+        <button class="unit-nav-btn" id="editor-scene-nav-prev" onclick="navigateEditorScene(-1)" title="Previous scene">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="unit-modal-title">
+          <span id="editor-scene-modal-title"></span>
+          <span id="editor-scene-modal-nav" style="font-size:12px;color:var(--text-muted);font-weight:400"></span>
+        </div>
+        <button class="unit-nav-btn" id="editor-scene-nav-next" onclick="navigateEditorScene(1)" title="Next scene">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <button class="unit-modal-close" onclick="closeEditorSceneModal()">&times;</button>
+    </div>
+    <div class="unit-modal-body" style="flex-direction:column">
+      <div style="flex:1;overflow-y:auto;padding:24px">
+        <div id="editor-scene-modal-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Unit Detail Modal -->
+<div class="unit-modal-backdrop" id="unit-modal" onclick="if(event.target===this)closeUnitModal()">
+  <div class="unit-modal">
+    <div class="unit-modal-header">
+      <div class="unit-modal-nav">
+        <button class="unit-nav-btn" id="unit-nav-prev" onclick="navigateUnit(-1)" title="Previous unit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="unit-modal-title">
+          <span id="unit-modal-id"></span>
+          <span id="unit-modal-nav-label" style="font-size:12px;color:var(--text-muted);font-weight:400"></span>
+          <div id="unit-modal-status" class="unit-status"></div>
+        </div>
+        <button class="unit-nav-btn" id="unit-nav-next" onclick="navigateUnit(1)" title="Next unit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <button class="unit-modal-close" onclick="closeUnitModal()">&times;</button>
+    </div>
+    <div class="unit-modal-body">
+      <div class="unit-modal-left">
+        <video id="unit-modal-video" controls></video>
+        <div id="unit-modal-video-empty" style="display:none;align-items:center;justify-content:center;min-height:320px;padding:24px;color:var(--text-muted);font-size:13px;text-align:center;background:#000;border-bottom:1px solid var(--border-subtle)"></div>
+        <div id="unit-modal-media-actions-slot"></div>
+        <div class="unit-modal-attempts-bar" id="unit-modal-attempts"></div>
+      </div>
+      <div class="unit-modal-right">
+        <div class="unit-modal-tabs">
+          <button class="unit-modal-tab active" data-panel="prompt" onclick="switchModalTab('prompt')" data-i18n="modal.prompt">提示词</button>
+          <button class="unit-modal-tab" data-panel="critique" onclick="switchModalTab('critique')" data-i18n="modal.critique">评审</button>
+          <button class="unit-modal-tab" data-panel="info" onclick="switchModalTab('info')" data-i18n="modal.info">信息</button>
+        </div>
+        <div class="unit-modal-panel active" id="modal-panel-prompt">
+          <div class="modal-section-label" data-i18n="modal.prompt">提示词</div>
+          <div id="modal-prompt-actions"></div>
+        </div>
+        <div class="unit-modal-panel" id="modal-panel-critique">
+          <div class="modal-section-label" data-i18n="modal.critique_result">评审结果</div>
+          <div id="modal-critique-content"></div>
+        </div>
+        <div class="unit-modal-panel" id="modal-panel-info">
+          <div class="modal-section-label" data-i18n="modal.unit_details">单元详情</div>
+          <div id="modal-info-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div><!-- end main-content -->
+</div><!-- end app -->
+
+<!-- Segment Preview Modal -->
+<div class="segment-modal-overlay" id="segment-modal-overlay" onclick="if(event.target===this) closeSegmentModal()">
+  <div class="segment-modal">
+    <div class="segment-modal-header">
+      <div class="segment-modal-title" id="segment-modal-title">Segment 1</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="segment-modal-nav">
+          <button class="segment-nav-btn" id="segment-prev-btn" onclick="navigateSegment(-1)" title="Previous">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="segment-nav-btn" id="segment-next-btn" onclick="navigateSegment(1)" title="Next">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <button class="segment-modal-close" onclick="closeSegmentModal()">&times;</button>
+      </div>
+    </div>
+    <div class="segment-modal-body" id="segment-modal-body">
+      <div class="segment-narrative" id="segment-narrative">Loading...</div>
+      <div class="segment-scenes-title" data-i18n="segment.scenes_in">此段落中的场景</div>
+      <div id="segment-scenes-list"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/static/js/main.js"></script>
+<script>
+// ── Seeddance model custom dropdown ──────────────────────────
+// Helper: apply a model value to the home picker UI
+function _applySdModelValue(value) {
+  const sel = document.getElementById('seeddance-model-select');
+  if (sel) sel.value = value;
+  const opt = document.querySelector(`#seeddance-model-selector .sd-model-option[data-value="${value}"]`);
+  if (opt) {
+    document.querySelectorAll('#seeddance-model-selector .sd-model-option').forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+    const label = document.getElementById('sd-model-label');
+    if (label) label.textContent = opt.querySelector('.sd-model-name').textContent;
+  }
+}
+// Restore persisted model on page load
+(function restoreSdModel() {
+  try {
+    // 首页选择器：恢复 seeddance_model
+    const saved = localStorage.getItem('seeddance_model');
+    if (saved) _applySdModelValue(saved);
+
+    // 编辑器选择器：优先用独立的 seeddance_editor_model，否则 fallback 到首页值
+    const editorSaved = localStorage.getItem('seeddance_editor_model') || saved;
+    if (editorSaved) {
+      const editorSel = document.getElementById('editor-model-select');
+      if (editorSel) editorSel.value = editorSaved;
+      const editorOpt = document.querySelector(`#editor-model-selector .sd-model-option[data-value="${editorSaved}"]`);
+      if (editorOpt) {
+        document.querySelectorAll('#editor-model-selector .sd-model-option').forEach(o => o.classList.remove('active'));
+        editorOpt.classList.add('active');
+        const editorLabel = document.getElementById('editor-model-label');
+        if (editorLabel) editorLabel.textContent = editorOpt.querySelector('.sd-model-name').textContent;
+      }
+    }
+  } catch(e) {}
+})();
+function toggleSdModelMenu(e) {
+  e.stopPropagation();
+  const picker = document.getElementById('seeddance-model-selector');
+  picker.classList.toggle('open');
+}
+function selectSdModel(el) {
+  const value = el.dataset.value;
+  const name = el.querySelector('.sd-model-name').textContent;
+  // update hidden select
+  document.getElementById('seeddance-model-select').value = value;
+  // update trigger label
+  document.getElementById('sd-model-label').textContent = name;
+  // update active state
+  document.querySelectorAll('#seeddance-model-selector .sd-model-option').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  // close
+  document.getElementById('seeddance-model-selector').classList.remove('open');
+  // persist to localStorage
+  try { localStorage.setItem('seeddance_model', value); } catch(e) {}
+  // sync editor picker
+  syncEditorModelFromHome();
+}
+// close on outside click
+document.addEventListener('click', function(e) {
+  const picker = document.getElementById('seeddance-model-selector');
+  if (picker && !picker.contains(e.target)) picker.classList.remove('open');
+  const editorPicker = document.getElementById('editor-model-selector');
+  if (editorPicker && !editorPicker.contains(e.target)) editorPicker.classList.remove('open');
+  document.querySelectorAll('.concat-mode-picker.open').forEach(p => {
+    if (!p.contains(e.target)) p.classList.remove('open');
+  });
+});
+window.toggleSdModelMenu = toggleSdModelMenu;
+window.selectSdModel = selectSdModel;
+
+// ── Editor model custom dropdown ──────────────────────────────
+function toggleEditorModelMenu(e) {
+  e.stopPropagation();
+  document.getElementById('editor-model-selector').classList.toggle('open');
+}
+function selectEditorModel(el) {
+  const value = el.dataset.value;
+  const name = el.querySelector('.sd-model-name').textContent;
+  document.getElementById('editor-model-select').value = value;
+  document.getElementById('editor-model-label').textContent = name;
+  document.querySelectorAll('#editor-model-selector .sd-model-option').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('editor-model-selector').classList.remove('open');
+  // 编辑器独立持久化，不覆盖首页选择
+  try { localStorage.setItem('seeddance_editor_model', value); } catch(e) {}
+}
+// 同步首页选中的模型到编辑器选择器（首页选择优先，覆盖编辑器旧值）
+function syncEditorModelFromHome() {
+  const homeVal = document.getElementById('seeddance-model-select')?.value || 'seedance-2.0';
+  const targetVal = homeVal;
+  const editorSelect = document.getElementById('editor-model-select');
+  const editorLabel = document.getElementById('editor-model-label');
+  if (!editorSelect || !editorLabel) return;
+  editorSelect.value = targetVal;
+  const opt = document.querySelector(`#editor-model-selector .sd-model-option[data-value="${targetVal}"]`);
+  if (opt) {
+    document.querySelectorAll('#editor-model-selector .sd-model-option').forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+    editorLabel.textContent = opt.querySelector('.sd-model-name').textContent;
+  }
+  // 将首页值写入编辑器 localStorage，保持一致性
+  try { localStorage.setItem('seeddance_editor_model', targetVal); } catch(e) {}
+}
+window.toggleEditorModelMenu = toggleEditorModelMenu;
+window.selectEditorModel = selectEditorModel;
+window.syncEditorModelFromHome = syncEditorModelFromHome;
+
+// ── Concat mode custom dropdown ───────────────────────────────
+function toggleConcatModeMenu(e) {
+  e.stopPropagation();
+  const picker = e.currentTarget.closest('.concat-mode-picker');
+  picker.classList.toggle('open');
+}
+function selectConcatMode(el) {
+  const value = el.dataset.value;
+  const picker = el.closest('.concat-mode-picker');
+  const sel = picker.querySelector('.concat-mode-select');
+  if (sel) { sel.value = value; }
+  picker.classList.remove('open');
+  window.onConcatModeChange?.(value);
+}
+window.toggleConcatModeMenu = toggleConcatModeMenu;
+window.selectConcatMode = selectConcatMode;
+</script>
+<input type="file" class="hidden-upload" id="asset-library-upload-input" accept="image/png,image/jpeg,image/webp">
+<div class="generic-modal-backdrop" id="asset-upload-modal">
+  <div class="generic-modal" onclick="event.stopPropagation()">
+    <h3 data-i18n="assets.upload_modal_title">上传到素材库</h3>
+    <p><span data-i18n="assets.upload_category_label">当前分类</span>：<strong id="asset-upload-category-value">角色</strong></p>
+    <p><span data-i18n="assets.upload_file_label">已选文件</span>：<span id="asset-upload-file-value">-</span></p>
+    <input type="text" id="asset-upload-name-input" data-i18n-placeholder="assets.upload_name_placeholder" placeholder="请输入素材名称" autocomplete="off" spellcheck="false">
+    <div class="generic-modal-actions">
+      <button class="btn-secondary" onclick="closeAssetUploadModal(true)" data-i18n="misc.cancel">取消</button>
+      <button class="btn-primary" id="asset-upload-submit-btn" onclick="submitAssetUpload()" data-i18n="assets.upload_submit">保存素材</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Entity to Storyboard Modal -->
+<div class="add-entity-modal-backdrop" id="add-entity-modal" onclick="if(event.target===this)closeAddEntityModal()">
+  <div class="add-entity-modal" onclick="event.stopPropagation()">
+    <h3 data-i18n="entity.add_title">添加素材到当前剧本</h3>
+    <div class="form-row">
+      <label data-i18n="entity.category">分类</label>
+      <select id="add-entity-category">
+        <option value="characters" data-i18n="editor.characters">角色</option>
+        <option value="locations" data-i18n="editor.locations">场景</option>
+        <option value="props" data-i18n="editor.props">道具</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label data-i18n="editor.name">名称</label>
+      <input type="text" id="add-entity-name" data-i18n-placeholder="entity.name_placeholder" placeholder="输入素材名称" autocomplete="off" spellcheck="false" />
+    </div>
+    <div class="form-row">
+      <label data-i18n="entity.desc_optional">描述（可选）</label>
+      <textarea id="add-entity-desc" data-i18n-placeholder="entity.desc_placeholder" placeholder="简要描述"></textarea>
+    </div>
+    <div class="form-row">
+      <label data-i18n="entity.image">图片</label>
+      <div class="image-source-tabs">
+        <button type="button" class="image-source-tab active" data-source="local" onclick="switchAddEntityImageSource('local')" data-i18n="assets.from_local">从本地上传</button>
+        <button type="button" class="image-source-tab" data-source="library" onclick="switchAddEntityImageSource('library')" data-i18n="assets.from_library">从素材库选择</button>
+      </div>
+      <div id="add-entity-image-local">
+        <div class="local-upload-zone" id="add-entity-upload-zone" onclick="document.getElementById('add-entity-file-input').click()" data-i18n="assets.click_select_image">
+          点击选择图片（PNG / JPG / WEBP）
+        </div>
+        <input type="file" id="add-entity-file-input" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="onAddEntityFileChange(this)" />
+      </div>
+      <div id="add-entity-image-library" style="display:none">
+        <div class="library-grid" id="add-entity-library-grid" data-i18n="misc.loading">加载中...</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeAddEntityModal()" data-i18n="misc.cancel">取消</button>
+      <button class="btn-primary" id="add-entity-submit-btn" onclick="submitAddEntity()" data-i18n="assets.add">添加</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Tutorial Modal -->
+<div class="tutorial-modal-backdrop" id="tutorial-modal" onclick="if(event.target===this)closeTutorialModal()">
+  <div class="tutorial-modal" onclick="event.stopPropagation()">
+    <div class="tutorial-modal-header">
+      <div class="tutorial-modal-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-linecap="round" stroke-width="2.5"/></svg>
+        <span data-i18n="nav.tutorial_title">使用说明</span>
+      </div>
+      <button class="tutorial-close-btn" onclick="closeTutorialModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="tutorial-cards">
+      <div class="tutorial-card">
+        <div class="tutorial-card-icon oneclick">⚡</div>
+        <div>
+          <div class="tutorial-card-badge oneclick" data-i18n="tutorial.oneclick_mode">一键成片</div>
+          <div class="tutorial-card-title" data-i18n="tutorial.oneclick_title">全自动 AI 成片</div>
+        </div>
+        <div class="tutorial-card-desc" data-i18n="tutorial.oneclick_desc">输入一句创意描述，Agent 全程接管剧本生成、分镜拆解、参考图绘制、视频渲染与拼接，无需任何人工干预，直出成片。</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num oneclick">1</div><span data-i18n="tutorial.oneclick_step1">在首页选择 <strong style="color:#fde68a">一句话成片</strong> 模式</span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num oneclick">2</div><span data-i18n="tutorial.oneclick_step2">输入一句创意描述（或在其他模式点击 <strong style="color:#fde68a">一键成片</strong> 按钮）</span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num oneclick">3</div><span data-i18n="tutorial.oneclick_step3">Agent 自动完成剧本 → 分镜 → 参考图 → 视频全流程</span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num oneclick">4</div><span data-i18n="tutorial.oneclick_step4"><strong style="color:#fde68a">无需人工干预</strong>，包含自动质检与多轮迭代优化</span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num oneclick">5</div><span data-i18n="tutorial.oneclick_step5">完成后在「创作台」查看最终成片</span></div>
+        </div>
+      </div>
+      <div class="tutorial-card">
+        <div class="tutorial-card-icon novel">📖</div>
+        <div>
+          <div class="tutorial-card-badge novel" data-i18n="tutorial.novel_mode">小说模式</div>
+          <div class="tutorial-card-title" data-i18n="tutorial.novel_title">从小说生成分镜</div>
+        </div>
+        <div class="tutorial-card-desc" data-i18n="tutorial.novel_desc">将小说文本直接转化为视频分镜脚本，AI 自动拆解场景与对白。支持上传 .txt 文件或直接粘贴文本，长篇小说自动分段处理。</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num novel">1</div><span data-i18n="tutorial.novel_step1">在「创建」页选择 <strong style="color:#c7d2fe">小说模式</strong></span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num novel">2</div><span data-i18n="tutorial.novel_step2">点击附件按钮 <strong style="color:#c7d2fe">上传 .txt 文件</strong>，或直接粘贴小说文本</span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num novel">3</div><span data-i18n="tutorial.novel_step3">AI 自动拆解场景，生成分镜脚本</span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num novel">4</div><span data-i18n="tutorial.novel_step4">在编辑器中 <strong style="color:#c7d2fe">调整场景</strong> 划分和提示词</span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num novel">5</div><span data-i18n="tutorial.novel_step5">选择风格后一键生成参考图与视频</span></div>
+        </div>
+      </div>
+      <div class="tutorial-card">
+        <div class="tutorial-card-icon video">🎬</div>
+        <div>
+          <div class="tutorial-card-badge video" data-i18n="tutorial.video_mode">视频模式</div>
+          <div class="tutorial-card-title" data-i18n="tutorial.video_title">从视频提取分镜</div>
+        </div>
+        <div class="tutorial-card-desc" data-i18n="tutorial.video_desc">上传已有视频（MP4/MOV），AI 自动识别场景并生成对应的分镜脚本，适合二创和翻拍。</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num video">1</div><span data-i18n="tutorial.video_step1">在「创建」页选择 <strong style="color:#fbcfe8">视频模式</strong></span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num video">2</div><span data-i18n="tutorial.video_step2">将视频文件 <strong style="color:#fbcfe8">拖入</strong> 上传区域</span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num video">3</div><span data-i18n="tutorial.video_step3">AI 自动提取关键帧并分析场景</span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num video">4</div><span data-i18n="tutorial.video_step4">生成的分镜可在编辑器中 <strong style="color:#fbcfe8">逐场景微调</strong></span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num video">5</div><span data-i18n="tutorial.video_step5">支持复刻原片或二创新风格</span></div>
+        </div>
+      </div>
+      <div class="tutorial-card">
+        <div class="tutorial-card-icon create">✨</div>
+        <div>
+          <div class="tutorial-card-badge create" data-i18n="tutorial.creative_mode">创作模式</div>
+          <div class="tutorial-card-title" data-i18n="tutorial.creative_title">一句话生成分镜</div>
+        </div>
+        <div class="tutorial-card-desc" data-i18n="tutorial.creative_desc">只需一句话描述你的创意，AI 从零开始生成完整的分镜脚本。可指定场景数量和风格。</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num create">1</div><span data-i18n="tutorial.creative_step1">在「创建」页选择 <strong style="color:#a7f3d0">创作模式</strong></span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num create">2</div><span data-i18n="tutorial.creative_step2"><strong style="color:#a7f3d0">输入一句话</strong> 描述你的故事创意</span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num create">3</div><span data-i18n="tutorial.creative_step3">AI 自动创作完整分镜脚本</span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num create">4</div><span data-i18n="tutorial.creative_step4">支持选择 <strong style="color:#a7f3d0">多种画面风格</strong>（3D 国漫、真人、水墨等）</span></div>
+          <div class="tutorial-card-step"><div class="tutorial-card-step-num create">5</div><span data-i18n="tutorial.creative_step5">在编辑器中精调后一键生成视频</span></div>
+        </div>
+      </div>
+    
+    </div>
+    <div class="tutorial-footer" data-i18n="tutorial.footer">点击任意空白处关闭 · 随时可从左侧导航栏重新打开</div>
+  </div>
+</div>
+
+
+
+<div class="demo-modal-backdrop" id="demo-modal" onclick="if(event.target===this)closeDemoModal()">
+  <div class="demo-modal">
+    <div class="demo-modal-left">
+      <video id="demo-modal-video" controls playsinline></video>
+    </div>
+    <div class="demo-modal-right">
+      <button class="demo-modal-close" onclick="closeDemoModal()">&times;</button>
+      <h3 id="demo-modal-title"></h3>
+      <div class="demo-modal-meta">
+        <span class="demo-modal-style-label" data-i18n="demo.style">风格</span>
+        <span class="demo-modal-style-value" id="demo-modal-style"></span>
+      </div>
+      <div class="demo-modal-synopsis-label" data-i18n="demo.synopsis">剧情梗概</div>
+      <div class="demo-modal-synopsis" id="demo-modal-synopsis"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Settings Modal -->
+<div class="settings-modal-backdrop" id="settings-modal" onclick="if(event.target===this)closeSettingsModal()">
+  <div class="settings-modal" onclick="event.stopPropagation()">
+    <div class="settings-modal-header">
+      <div class="settings-modal-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;flex-shrink:0"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span data-i18n="nav.settings">设置</span>
+      </div>
+      <button class="settings-modal-close" onclick="closeSettingsModal()">&times;</button>
+    </div>
+    <div class="settings-modal-body">
+      <div class="settings-section">
+        <div class="settings-section-title" data-i18n="settings.session_title">Session 设置</div>
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <span data-i18n="settings.jimeng_session">即梦 Session ID</span>
+            <span class="settings-row-hint" data-i18n="settings.jimeng_session_hint">用于即梦视频生成的 Session ID</span>
+            <span class="settings-help-btn" id="jimeng-help-btn" onclick="toggleJimengHelp()" title="如何获取 Session ID">?</span>
+          </div>
+          <div class="settings-row-control" style="flex:1;max-width:360px">
+            <input type="text" class="form-input" id="settings-jimeng-session" placeholder="sessionid=..." style="width:100%;font-size:12px" autocomplete="off" spellcheck="false" />
+          </div>
+        </div>
+        <div class="settings-help-box" id="jimeng-help-box" style="display:none">
+          <div class="settings-help-steps">
+            <div class="settings-help-step">
+              <span class="settings-help-num">1</span>
+              <span>在浏览器中打开 <a href="https://jimeng.jianying.com" target="_blank" rel="noopener">jimeng.jianying.com</a> 并登录账号</span>
+            </div>
+            <div class="settings-help-step">
+              <span class="settings-help-num">2</span>
+              <span>按 <kbd>F12</kbd> 打开开发者工具（Mac 用 <kbd>⌥⌘I</kbd>）</span>
+            </div>
+            <div class="settings-help-step">
+              <span class="settings-help-num">3</span>
+              <span>点击顶部 <strong>应用（Application）</strong> 标签页</span>
+            </div>
+            <div class="settings-help-step">
+              <span class="settings-help-num">4</span>
+              <span>左侧展开 <strong>Cookie</strong> → 点击 <code>https://jimeng.jianying.com</code></span>
+            </div>
+            <div class="settings-help-step">
+              <span class="settings-help-num">5</span>
+              <span>在列表中找到 <code>sessionid</code>，复制其 <strong>值</strong>，粘贴到上方输入框</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LLM Provider -->
+      <div class="settings-section">
+        <div class="settings-section-title">LLM 配置</div>
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <span>LLM Provider</span>
+            <span class="settings-row-hint">选择 LLM 接入方式</span>
+          </div>
+          <div class="settings-row-control" style="flex:1;max-width:280px">
+            <select class="form-input" id="settings-llm-provider" style="width:100%">
+              <option value="openai_compatible">OpenAI 兼容格式（推荐）</option>
+              <option value="google">Google 官方 API</option>
+              <option value="custom:my_llm">自定义插件（custom:name）</option>
+            </select>
+          </div>
+        </div>
+        <div id="settings-llm-openai-fields">
+          <div class="settings-row">
+            <div class="settings-row-label"><span>Base URL</span><span class="settings-row-hint">API 地址，如 https://api.deepseek.com/v1</span></div>
+            <div class="settings-row-control" style="flex:1;max-width:360px">
+              <input type="text" class="form-input" id="settings-llm-base-url" placeholder="https://api.deepseek.com/v1" style="width:100%;font-size:12px" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-label"><span>API Key</span></div>
+            <div class="settings-row-control" style="flex:1;max-width:360px">
+              <input type="password" class="form-input" id="settings-llm-api-key" placeholder="sk-..." style="width:100%;font-size:12px" autocomplete="off" />
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-label"><span>模型名称</span><span class="settings-row-hint">如 deepseek-chat 或 gemini-3-flash-preview</span></div>
+            <div class="settings-row-control" style="flex:1;max-width:280px">
+              <input type="text" class="form-input" id="settings-llm-model" placeholder="gemini-3-flash-preview" style="width:100%;font-size:12px" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+        </div>
+        <div id="settings-llm-google-fields" style="display:none">
+          <div class="settings-row">
+            <div class="settings-row-label"><span>Gemini API Key</span><span class="settings-row-hint">Google AI Studio 的 API Key（AIza...）</span></div>
+            <div class="settings-row-control" style="flex:1;max-width:360px">
+              <input type="password" class="form-input" id="settings-llm-google-api-key" placeholder="AIza..." style="width:100%;font-size:12px" autocomplete="off" />
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-label"><span>模型名称</span></div>
+            <div class="settings-row-control" style="flex:1;max-width:280px">
+              <input type="text" class="form-input" id="settings-llm-google-model" placeholder="gemini-3-flash-preview" style="width:100%;font-size:12px" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+        </div>
+        <div id="settings-llm-custom-hint" style="display:none">
+          <div class="settings-row">
+            <div class="settings-row-label" style="flex:1">
+              <span style="color:var(--text-muted);font-size:12px">将你的 LLM client 代码放入 <code>clients/custom/</code> 目录，并在上方输入 <code>custom:文件名</code>。详见 <code>clients/custom/README.md</code>。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Image Provider -->
+      <div class="settings-section">
+        <div class="settings-section-title">生图配置</div>
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <span>Image Provider</span>
+            <span class="settings-row-hint">选择生图接入方式</span>
+          </div>
+          <div class="settings-row-control" style="flex:1;max-width:280px">
+            <select class="form-input" id="settings-image-provider" style="width:100%">
+              <option value="openai_compatible">OpenAI 兼容格式（gpt-image-2 等）</option>
+              <option value="google">Google 官方 API（Gemini 生图）</option>
+              <option value="custom:my_image">自定义插件（custom:name）</option>
+            </select>
+          </div>
+        </div>
+        <div id="settings-image-openai-fields" style="display:none">
+          <div class="settings-row">
+            <div class="settings-row-label"><span>Base URL</span></div>
+            <div class="settings-row-control" style="flex:1;max-width:360px">
+              <input type="text" class="form-input" id="settings-image-base-url" placeholder="https://api.openai.com/v1" style="width:100%;font-size:12px" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-label"><span>API Key</span></div>
+            <div class="settings-row-control" style="flex:1;max-width:360px">
+              <input type="password" class="form-input" id="settings-image-api-key" placeholder="sk-..." style="width:100%;font-size:12px" autocomplete="off" />
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-label"><span>模型名称</span><span class="settings-row-hint">如 gpt-image-2 或 dall-e-3</span></div>
+            <div class="settings-row-control" style="flex:1;max-width:280px">
+              <input type="text" class="form-input" id="settings-image-model" placeholder="gpt-image-2" style="width:100%;font-size:12px" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+        </div>
+        <div id="settings-image-google-fields" style="display:none">
+          <div class="settings-row">
+            <div class="settings-row-label"><span>Gemini API Key</span><span class="settings-row-hint">Google AI Studio 的 API Key（AIza...）</span></div>
+            <div class="settings-row-control" style="flex:1;max-width:360px">
+              <input type="password" class="form-input" id="settings-image-google-api-key" placeholder="AIza..." style="width:100%;font-size:12px" autocomplete="off" />
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-label"><span>模型名称</span></div>
+            <div class="settings-row-control" style="flex:1;max-width:280px">
+              <input type="text" class="form-input" id="settings-image-google-model" placeholder="gemini-3-pro-image-preview" style="width:100%;font-size:12px" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+        </div>
+        <div id="settings-image-custom-hint" style="display:none">
+          <div class="settings-row">
+            <div class="settings-row-label" style="flex:1">
+              <span style="color:var(--text-muted);font-size:12px">将你的生图 client 代码放入 <code>clients/custom/</code> 目录，并在上方输入 <code>custom:文件名</code>。详见 <code>clients/custom/README.md</code>。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">并发控制</div>
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <span>生图并发数</span>
+            <span class="settings-row-hint">同时生成的图片任务数</span>
+          </div>
+          <div class="settings-row-control">
+            <input type="range" id="settings-image-concurrency" min="1" max="16" step="1" value="4" oninput="document.getElementById('settings-image-concurrency-val').textContent=this.value">
+            <span class="settings-range-val" id="settings-image-concurrency-val">4</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <span>视频并发数</span>
+            <span class="settings-row-hint">单个视频任务内部的最大并行场景数</span>
+          </div>
+          <div class="settings-row-control">
+            <input type="range" id="settings-video-concurrency" min="1" max="16" step="1" value="4" oninput="document.getElementById('settings-video-concurrency-val').textContent=this.value">
+            <span class="settings-range-val" id="settings-video-concurrency-val">4</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="settings-modal-footer">
+      <span class="settings-status" id="settings-status"></span>
+      <div class="settings-footer-actions">
+        <button type="button" class="btn-secondary" onclick="closeSettingsModal()">取消</button>
+        <button type="button" class="btn-secondary" onclick="testApiAvailability()">检查 API 可用性</button>
+        <button type="button" class="btn-primary" onclick="saveSettings()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- API Test Modal -->
+<div class="api-test-backdrop" id="api-test-modal">
+  <div class="api-test-dialog">
+    <div class="api-test-title">API 可用性检测</div>
+    <div class="api-test-items">
+      <div class="api-test-item" id="api-test-llm">
+        <div class="api-test-spinner" id="api-test-llm-spinner"></div>
+        <div class="api-test-icon api-test-ok" id="api-test-llm-ok">✓</div>
+        <div class="api-test-icon api-test-fail" id="api-test-llm-fail">✗</div>
+        <div class="api-test-label">
+          <span class="api-test-name">LLM 接口</span>
+          <span class="api-test-detail" id="api-test-llm-detail">检测中…</span>
+        </div>
+      </div>
+      <div class="api-test-item" id="api-test-image">
+        <div class="api-test-spinner" id="api-test-image-spinner"></div>
+        <div class="api-test-icon api-test-ok" id="api-test-image-ok">✓</div>
+        <div class="api-test-icon api-test-fail" id="api-test-image-fail">✗</div>
+        <div class="api-test-label">
+          <span class="api-test-name">生图接口</span>
+          <span class="api-test-detail" id="api-test-image-detail">检测中…</span>
+        </div>
+      </div>
+    </div>
+    <div class="api-test-footer">
+      <button type="button" class="btn-secondary" id="api-test-close-btn" onclick="closeApiTestModal()" style="display:none">关闭</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

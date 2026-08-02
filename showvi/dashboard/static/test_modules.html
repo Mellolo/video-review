@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Module Load Test</title></head>
+<body>
+<pre id="log">Loading modules...</pre>
+<script type="module">
+const log = document.getElementById('log');
+function addLog(msg) {
+  log.textContent += '\n' + msg;
+  console.log(msg);
+}
+
+window.onerror = (msg, src, line, col, err) => {
+  addLog('ERROR: ' + msg + ' at ' + src + ':' + line);
+};
+
+try {
+  addLog('Importing state.js...');
+  const state = await import('/static/js/state.js');
+  addLog('  OK: ' + Object.keys(state).length + ' exports');
+
+  addLog('Importing utils.js...');
+  const utils = await import('/static/js/utils.js');
+  addLog('  OK: ' + Object.keys(utils).length + ' exports');
+
+  addLog('Importing i18n.js...');
+  const i18n = await import('/static/js/i18n.js');
+  addLog('  OK: ' + Object.keys(i18n).length + ' exports');
+
+  addLog('Importing auth.js...');
+  const auth = await import('/static/js/auth.js');
+  addLog('  OK: ' + Object.keys(auth).length + ' exports');
+
+  addLog('Importing ws.js...');
+  const ws = await import('/static/js/ws.js');
+  addLog('  OK: ' + Object.keys(ws).length + ' exports');
+
+  addLog('Importing nav.js...');
+  const nav = await import('/static/js/nav.js');
+  addLog('  OK: ' + Object.keys(nav).length + ' exports');
+
+  addLog('Importing unit-helpers.js...');
+  const uh = await import('/static/js/unit-helpers.js');
+  addLog('  OK: ' + Object.keys(uh).length + ' exports');
+
+  addLog('Importing prompt-editor.js...');
+  const pe = await import('/static/js/prompt-editor.js');
+  addLog('  OK: ' + Object.keys(pe).length + ' exports');
+
+  addLog('Importing monitor.js...');
+  const mon = await import('/static/js/monitor.js');
+  addLog('  OK: ' + Object.keys(mon).length + ' exports');
+
+  addLog('Importing repository.js...');
+  const repo = await import('/static/js/repository.js');
+  addLog('  OK: ' + Object.keys(repo).length + ' exports');
+
+  addLog('Importing assets.js...');
+  const assets = await import('/static/js/assets.js');
+  addLog('  OK: ' + Object.keys(assets).length + ' exports');
+
+  addLog('Importing unit-modal.js...');
+  const um = await import('/static/js/unit-modal.js');
+  addLog('  OK: ' + Object.keys(um).length + ' exports');
+
+  addLog('Importing editor.js...');
+  const ed = await import('/static/js/editor.js');
+  addLog('  OK: ' + Object.keys(ed).length + ' exports');
+
+  addLog('Importing video-jobs.js...');
+  const vj = await import('/static/js/video-jobs.js');
+  addLog('  OK: ' + Object.keys(vj).length + ' exports');
+
+  addLog('Importing create.js...');
+  const cr = await import('/static/js/create.js');
+  addLog('  OK: ' + Object.keys(cr).length + ' exports');
+
+  addLog('\n=== ALL MODULES LOADED SUCCESSFULLY ===');
+  addLog('Checking window functions...');
+  
+  // Now try loading main.js
+  addLog('Importing main.js...');
+  await import('/static/js/main.js');
+  addLog('  OK');
+  
+  // Check if key functions are on window
+  const fns = ['switchTab', 'handleUserEntryClick', 'openAuthModal', 'submitInlineLogin', 'toggleDrawer'];
+  for (const fn of fns) {
+    addLog('  window.' + fn + ' = ' + (typeof window[fn]));
+  }
+  
+  addLog('\n=== TEST COMPLETE ===');
+} catch (err) {
+  addLog('FATAL ERROR: ' + err.message);
+  addLog('Stack: ' + err.stack);
+}
+</script>
+</body>
+</html>
