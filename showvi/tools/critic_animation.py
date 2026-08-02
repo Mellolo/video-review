@@ -82,6 +82,7 @@ def critique_animation_video(
     model: Optional[str] = None,
     timeout_seconds: int = 180,
     output_path: Optional[str] = None,
+    strictness: int = 3,
 ) -> Dict[str, Any]:
     """对动画视频进行质量审核。
 
@@ -94,6 +95,8 @@ def critique_animation_video(
         model: 模型名称（默认从 .env 读取 LLM_MODEL_VIDEO_CRITIQUE）
         timeout_seconds: API 超时时间（秒）
         output_path: 审核结果 JSON 保存路径（可选）
+        strictness: 严格度等级 1-4（默认 3=严格）
+            1=宽松, 2=普通, 3=严格, 4=极严
 
     Returns:
         审核结果字典，包含评分、问题列表、建议等
@@ -118,7 +121,7 @@ def critique_animation_video(
     client = get_llm_client(step="video_critique")
 
     # 构建审核 prompt
-    system_prompt = build_animation_critique_prompt(scene_description)
+    system_prompt = build_animation_critique_prompt(scene_description, strictness=strictness)
 
     user_message = (
         f"请审核以下动画视频。\n\n"
@@ -295,14 +298,16 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-    python tools/critic_animation.py --video input.mp4 --scene "场景描述" --output critique_result.json
+    python tools/critic_animation.py --video input.mp4 --scene "场景描述" --output 审核结果.json
         """,
     )
     parser.add_argument("--video", type=str, required=True, help="视频文件路径")
     parser.add_argument("--scene", type=str, required=True, help="场景描述文本（审核对照基准）")
-    parser.add_argument("--output", type=str, default="critique_result.json", help="审核结果 JSON 保存路径")
+    parser.add_argument("--output", type=str, default="审核结果.json", help="审核结果 JSON 保存路径")
     parser.add_argument("--model", type=str, default=None, help="审核模型（默认从 .env 读取 LLM_MODEL_VIDEO_CRITIQUE）")
     parser.add_argument("--timeout", type=int, default=300, help="API 超时时间（秒）")
+    parser.add_argument("--strictness", type=int, default=3, choices=[1, 2, 3, 4],
+                        help="严格度等级: 1=宽松, 2=普通, 3=严格(默认), 4=极严")
     parser.add_argument("--env", type=str, default=".env", help=".env 文件路径")
     args = parser.parse_args()
 
@@ -328,6 +333,7 @@ def main():
             model=args.model,
             timeout_seconds=args.timeout,
             output_path=args.output,
+            strictness=args.strictness,
         )
         print(f"\n✅ 审核完成: {result['overall_score']}/10 ({result['recommendation']})")
         print(f"报告: {args.output}")

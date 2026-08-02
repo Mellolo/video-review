@@ -5,11 +5,11 @@
 
 用法:
     # 独立调用
-    python tools/report_generator.py --session session_20260802_190000/
+    python tools/report_generator.py --session 审核_20260802_190000/
 
     # 在编排脚本中调用
     from tools.report_generator import generate_report
-    generate_report(session_dir="session_20260802_190000/", video_path="...", scene_description="...")
+    generate_report(session_dir="审核_20260802_190000/", video_path="...", scene_description="...")
 """
 
 import argparse
@@ -61,12 +61,12 @@ def generate_report(
     """根据 session 目录中的审核产物生成结构化 Markdown 报告。
 
     读取 session 目录下的:
-      - critique_result.json  (必须)
-      - scene_description.txt (可选，如未传入 scene_description)
-      - frames/               (可选)
-      - references/           (可选)
+      - 审核结果.json  (必须)
+      - 场景描述.txt (可选，如未传入 scene_description)
+      - 原帧/               (可选)
+      - 参考图/           (可选)
 
-    生成 report.md 保存到 session 目录下。
+    生成 审核报告.md 保存到 session 目录下。
 
     Args:
         session_dir: session 目录路径
@@ -79,7 +79,7 @@ def generate_report(
     session = Path(session_dir)
 
     # 读取审核结果
-    critique_path = session / "critique_result.json"
+    critique_path = session / "审核结果.json"
     if not critique_path.exists():
         raise FileNotFoundError(f"审核结果不存在: {critique_path}")
     with open(critique_path, "r", encoding="utf-8") as f:
@@ -87,19 +87,19 @@ def generate_report(
 
     # 读取场景描述
     if not scene_description:
-        scene_file = session / "scene_description.txt"
+        scene_file = session / "场景描述.txt"
         if scene_file.exists():
             scene_description = scene_file.read_text(encoding="utf-8").strip()
         else:
             scene_description = "（未提供）"
 
     # 查找帧和参考图
-    frames_dir = session / "frames"
-    refs_dir = session / "references"
+    frames_dir = session / "原帧"
+    refs_dir = session / "参考图"
 
     # 构建 timestamp → 帧路径 / 参考图路径 的映射
-    frame_map = _build_image_map(frames_dir, "frame_")
-    ref_map = _build_image_map(refs_dir, "reference_")
+    frame_map = _build_image_map(frames_dir, "原帧_")
+    ref_map = _build_image_map(refs_dir, "参考图_")
 
     # 生成报告
     report = _build_report(
@@ -111,7 +111,7 @@ def generate_report(
     )
 
     # 保存报告
-    report_path = session / "report.md"
+    report_path = session / "审核报告.md"
     report_path.write_text(report, encoding="utf-8")
     print(f"[REPORT] 报告已生成: {report_path}")
 
@@ -347,10 +347,10 @@ def main():
         epilog="""
 示例:
     # 独立调用（session 目录需包含 critique_result.json）
-    python tools/report_generator.py --session session_20260802_190000/
+    python tools/report_generator.py --session 审核_20260802_190000/
 
     # 指定视频路径和场景描述
-    python tools/report_generator.py --session session_20260802_190000/ \\
+    python tools/report_generator.py --session 审核_20260802_190000/ \\
         --video path/to/video.mp4 \\
         --scene "场景描述文本"
         """,

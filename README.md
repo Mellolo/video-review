@@ -27,7 +27,7 @@ python run_critique_and_ref.py \
 python run_critique_and_ref.py \
     --video your_video.mp4 \
     --scene "场景描述" \
-    --session 视频审核/测试视频1/session_20260802_184651 \
+    --session 视频审核/测试视频1/审核_20260802_184651 \
     --skip-critique
 ```
 
@@ -41,9 +41,9 @@ python run_critique_and_ref.py \
 
 | # | 工具 | 入口文件 | 产出 |
 |---|------|----------|------|
-| 1 | **视频审核** | `tools/critic_animation.py` | `critique_result.json` |
-| 2 | **参考图生成** | `tools/reference_image_gen.py` | `frames/` + `references/` |
-| 3 | **汇总报告** | `tools/report_generator.py` | `report.md` |
+| 1 | **视频审核** | `tools/critic_animation.py` | `审核结果.json` |
+| 2 | **参考图生成** | `tools/reference_image_gen.py` | `原帧/` + `参考图/` |
+| 3 | **汇总报告** | `tools/report_generator.py` | `审核报告.md` |
 | - | **编排器** | `run_critique_and_ref.py` | 串联 1→2→3 |
 
 ### 独立调用
@@ -53,18 +53,19 @@ python run_critique_and_ref.py \
 python tools/critic_animation.py \
     --video input.mp4 \
     --scene "场景描述" \
-    --output session/critique_result.json
+    --output 审核_20260802/审核结果.json \
+    --strictness 3          # 1=宽松 2=普通 3=严格(默认) 4=极严
 
 # 2. 参考图
 python tools/reference_image_gen.py \
-    --critique session/critique_result.json \
+    --critique 审核_20260802/审核结果.json \
     --video input.mp4 \
     --scene "场景描述" \
-    --output session/
+    --output 审核_20260802/
 
 # 3. 报告
 python tools/report_generator.py \
-    --session session/
+    --session 审核_20260802/
 ```
 
 ---
@@ -76,16 +77,16 @@ python tools/report_generator.py \
 ```
 视频审核/测试视频1/
 ├── your_video.mp4                        # 原视频（不动）
-└── session_20260802_184651/              # ← 自动创建
-    ├── scene_description.txt             # 场景描述
-    ├── critique_result.json              # Phase 1: 审核 JSON
-    ├── frames/                            # Phase 2: 原始帧
-    │   ├── frame_00s12.png
-    │   └── frame_00s35.png
-    ├── references/                       # Phase 2: 参考图
-    │   ├── reference_00s12_xxx.png
-    │   └── reference_00s35_xxx.png
-    └── report.md                         # Phase 3: 结构化报告
+└── 审核_20260802_184651/               # ← 自动创建
+    ├── 场景描述.txt                     # 场景描述
+    ├── 审核结果.json                     # Phase 1: 审核 JSON
+    ├── 原帧/                            # Phase 2: 原始帧
+    │   ├── 原帧_00s12.png
+    │   └── 原帧_00s35.png
+    ├── 参考图/                          # Phase 2: 参考图
+    │   ├── 参考图_00s12.png
+    │   └── 参考图_00s35.png
+    └── 审核报告.md                       # Phase 3: 结构化报告
 ```
 
 ---
@@ -102,7 +103,24 @@ python tools/report_generator.py \
 | 艺术表现力 | `artistic_expression` | 构图、色彩、感染力 |
 | 模型穿模 | `model_clipping` | 道具穿透、身体穿插、环境穿模 |
 
-**评分标准**：0-10 分 | `>= 7.0 → ACCEPT` | `4.0-6.9 → RETRY` | `< 4.0 → REJECT`
+## 严格度等级（`--strictness`）
+
+可通过 `--strictness` 参数调整审核严格程度，默认为 3（严格）：
+
+| 等级 | 名称 | ACCEPT 阈值 | 最少关键问题 | 最少次要问题 | 说明 |
+|:----:|:----:|:----------:|:------------:|:------------:|------|
+| 1 | 宽松 | >= 6.0 | 1 | 2 | 容忍小瑕疵，关注主要问题 |
+| 2 | 普通 | >= 7.0 | 2 | 3 | 标准审核力度 |
+| 3 | **严格（默认）** | >= 8.0 | 3 | 5 | 高标准严要求，逐秒排查 |
+| 4 | 极严 | >= 9.0 | 5 | 8 | 吹毛求疵，一切以完美为基准 |
+
+```bash
+# 指定严格度示例
+python run_critique_and_ref.py --video input.mp4 --scene "..." --strictness 4  # 极严
+python tools/critic_animation.py --video input.mp4 --scene "..." --strictness 1  # 宽松
+```
+
+---
 
 ---
 
@@ -175,6 +193,7 @@ python run_critique_and_ref.py \
     --model       审核模型（默认 .env）
     --model-image 参考图模型（默认 .env）
     --timeout     审核超时秒数（默认 300）
+    --strictness  严格度: 1=宽松 2=普通 3=严格(默认) 4=极严
     --skip-critique  跳过审核
     --skip-ref       跳过参考图
     --skip-report    跳过报告

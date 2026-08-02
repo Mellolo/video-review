@@ -3,9 +3,9 @@
 端到端编排脚本 — 串联三个独立工具完成视频审核全流程。
 
 三个工具:
-  Phase 1: 视频审核      (tools/critic_animation.py)   → critique_result.json
-  Phase 2: 参考图生成     (tools/reference_image_gen.py) → frames/ + references/
-  Phase 3: 汇总报告       (tools/report_generator.py)    → report.md
+  Phase 1: 视频审核      (tools/critic_animation.py)   → 审核结果.json
+  Phase 2: 参考图生成     (tools/reference_image_gen.py) → 原帧/ + 参考图/
+  Phase 3: 汇总报告       (tools/report_generator.py)    → 审核报告.md
 
 每个工具也可独立调用:
   python tools/critic_animation.py --video input.mp4 --scene "..." --output result.json
@@ -21,7 +21,7 @@
 
     # 从已有审核结果继续（跳过审核，只生成参考图和报告）
     python run_critique_and_ref.py --video input.mp4 --scene "..." \\
-        --session session_20260802_190000/ --skip-critique
+        --session 审核_20260802_190000/ --skip-critique
 """
 
 import argparse
@@ -50,7 +50,7 @@ def _load_env_file(env_path: str = ".env") -> None:
 def _create_session_dir(video_dir: str) -> str:
     """在视频所在目录下创建 session 目录。"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    session_name = f"session_{timestamp}"
+    session_name = f"审核_{timestamp}"
     session_dir = str(Path(video_dir) / session_name)
     Path(session_dir).mkdir(parents=True, exist_ok=True)
     return session_dir
@@ -62,17 +62,21 @@ def run_phase1_critique(
     session_dir: str,
     model: str = None,
     timeout_seconds: int = 300,
+    strictness: int = 3,
 ) -> dict:
     """Phase 1: 视频审核。"""
     from tools.critic_animation import critique_animation_video
+    from prompts.critic_animation import STRICTNESS_LEVELS
 
     resolved_model = model or os.environ.get("LLM_MODEL_VIDEO_CRITIQUE", "qwen-vl-max")
-    critique_path = str(Path(session_dir) / "critique_result.json")
+    critique_path = str(Path(session_dir) / "审核结果.json")
+    strictness_name = STRICTNESS_LEVELS.get(strictness, {}).get("name", "未知")
 
     print("=" * 60)
     print("Phase 1: 视频审核")
     print("=" * 60)
     print(f"模型: {resolved_model}")
+    print(f"严格度: {strictness} ({strictness_name})")
 
     start_time = time.time()
     result = critique_animation_video(
@@ -81,6 +85,7 @@ def run_phase1_critique(
         model=resolved_model,
         timeout_seconds=timeout_seconds,
         output_path=critique_path,
+        strictness=strictness,
     )
     elapsed = time.time() - start_time
 
@@ -170,7 +175,7 @@ def main():
 
     # 从已有 session 继续（跳过审核）
     python run_critique_and_ref.py --video input.mp4 --scene "..." \\
-        --session session_20260802_190000/ --skip-critique
+        --session 审核_20260802_190000/ --skip-critique
         """,
     )
     parser.add_argument("--video", type=str, required=True, help="视频文件路径")
@@ -180,6 +185,8 @@ def main():
     parser.add_argument("--model", type=str, default=None, help="视频审核模型")
     parser.add_argument("--model-image", type=str, default=None, help="参考图生成模型")
     parser.add_argument("--timeout", type=int, default=300, help="审核 API 超时时间（秒）")
+    parser.add_argument("--strictness", type=int, default=3, choices=[1, 2, 3, 4],
+                        help="严格度等级: 1=宽松, 2=普通, 3=严格(默认), 4=极严")
     parser.add_argument("--skip-critique", action="store_true", help="跳过 Phase 1 审核")
     parser.add_argument("--skip-ref", action="store_true", help="跳过 Phase 2 参考图生成")
     parser.add_argument("--skip-report", action="store_true", help="跳过 Phase 3 汇总报告")
@@ -214,13 +221,15 @@ def main():
         session_dir = _create_session_dir(video_dir)
 
     # 保存场景描述到 session 目录
-    scene_file = Path(session_dir) / "scene_description.txt"
+    scene_file = Path(session_dir) / "场景描述.txt"
     scene_file.write_text(args.scene, encoding="utf-8")
 
     print(f"视频: {video_path}")
     print(f"Session: {session_dir}")
     print(f"场景: {args.scene[:80]}...")
+    from prompts.critic_animation import STRICTNESS_LEVELS
     print(f"审核模型: {args.model or os.environ.get('LLM_MODEL_VIDEO_CRITIQUE', 'qwen-vl-max')}")
+    print(f"严格度: {args.strictness} ({STRICTNESS_LEVELS[args.strictness]['name']})")
     print(f"图片模型: {resolved_model_image}")
     print(f"Phases: {'1' if not args.skip_critique else '–'} / {'2' if not args.skip_ref else '–'} / {'3' if not args.skip_report else '–'}")
     print()
@@ -235,6 +244,7 @@ def main():
                 session_dir=session_dir,
                 model=args.model,
                 timeout_seconds=args.timeout,
+                strictness=args.strictness,
             )
         except Exception as e:
             print(f"\n❌ 视频审核失败: {e}")
@@ -243,9 +253,9 @@ def main():
             sys.exit(1)
     else:
         # 从 session 目录读取已有审核结果
-        critique_path = Path(session_dir) / "critique_result.json"
+        critique_path = Path(session_dir) / "审核结果.json"
         if not critique_path.exists():
-            print(f"错误: --skip-critique 但 session 目录中无 critique_result.json")
+            print(f"错误: --skip-critique 但 session 目录中无 审核结果.json")
             sys.exit(1)
         with open(critique_path, "r", encoding="utf-8") as f:
             critique_data = json.load(f)

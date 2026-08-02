@@ -137,9 +137,9 @@ def generate_all_reference_images(
     model_image = model_image or _get_default_image_model()
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    # session 目录结构: output_dir/frames/ 和 output_dir/references/
-    frames_dir = str(Path(output_dir) / "frames")
-    refs_dir = str(Path(output_dir) / "references")
+    # session 目录结构: output_dir/原帧/ 和 output_dir/参考图/
+    frames_dir = str(Path(output_dir) / "原帧")
+    refs_dir = str(Path(output_dir) / "参考图")
     Path(frames_dir).mkdir(parents=True, exist_ok=True)
     Path(refs_dir).mkdir(parents=True, exist_ok=True)
 
@@ -195,10 +195,10 @@ def generate_all_reference_images(
                 model=model_image,
                 api_key=resolved_key,
             )
-            # 下载保存到 references/
+            # 下载保存到 参考图/
             ts_safe = ts.replace(":", "s")
             output_path = _download_image(
-                image_url, refs_dir, prefix=f"reference_{ts_safe}"
+                image_url, refs_dir, prefix=f"参考图_{ts_safe}"
             )
             elapsed = time.time() - start_time
             print(f"[REF IMAGE] Done in {elapsed:.1f}s → {output_path}")
@@ -281,7 +281,7 @@ def _extract_video_frame(
     """
     minutes = int(timestamp) // 60
     seconds = int(timestamp) % 60
-    frame_path = str(Path(output_dir) / f"frame_{minutes:02d}s{seconds:02d}.png")
+    frame_path = str(Path(output_dir) / f"原帧_{minutes:02d}s{seconds:02d}.png")
 
     cmd = [
         "ffmpeg", "-y",
@@ -495,7 +495,7 @@ def _extract_image_url(response: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def _download_image(url: str, output_dir: str, prefix: str = "reference_image") -> str:
+def _download_image(url: str, output_dir: str, prefix: str = "参考图") -> str:
     """下载图片并保存到输出目录。
 
     Args:
@@ -506,8 +506,7 @@ def _download_image(url: str, output_dir: str, prefix: str = "reference_image") 
     Returns:
         保存的图片文件路径
     """
-    timestamp = int(time.time())
-    output_path = str(Path(output_dir) / f"{prefix}_{timestamp}.png")
+    output_path = str(Path(output_dir) / f"{prefix}.png")
 
     with httpx.Client(timeout=120.0) as client:
         response = client.get(url)
@@ -532,10 +531,10 @@ def main():
         epilog="""
 示例:
     python tools/reference_image_gen.py \
-        --critique session_20260802/critique_result.json \
+        --critique 审核_20260802/审核结果.json \
         --video input.mp4 \
         --scene "场景描述" \
-        --output session_20260802/
+        --output 审核_20260802/
         """,
     )
     parser.add_argument("--critique", type=str, required=True, help="审核结果 JSON 文件路径")
