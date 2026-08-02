@@ -11,12 +11,14 @@
 支持 qwen-image-2.0-pro-2026-06-22 / qwen-image-max 等模型。
 """
 
+import argparse
 import base64
 import json
 import logging
 import mimetypes
 import os
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -135,6 +137,12 @@ def generate_all_reference_images(
     model_image = model_image or _get_default_image_model()
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
+    # session 目录结构: output_dir/frames/ 和 output_dir/references/
+    frames_dir = str(Path(output_dir) / "frames")
+    refs_dir = str(Path(output_dir) / "references")
+    Path(frames_dir).mkdir(parents=True, exist_ok=True)
+    Path(refs_dir).mkdir(parents=True, exist_ok=True)
+
     resolved_key = api_key or _env("LLM_API_KEY")
     if not resolved_key:
         raise ValueError("LLM_API_KEY 未设置，请在 .env 中配置")
@@ -170,7 +178,7 @@ def generate_all_reference_images(
         print(f"\n[REF IMAGE] ({i}/{len(timestamps_to_process)}) 时间戳: {ts} ({target_ts:.1f}s)")
 
         # 提取帧
-        frame_path = _extract_video_frame(video_path, target_ts, output_dir)
+        frame_path = _extract_video_frame(video_path, target_ts, frames_dir)
         print(f"[REF IMAGE] 已提取帧: {frame_path}")
 
         # 构建针对该时间戳的 prompt
@@ -187,10 +195,10 @@ def generate_all_reference_images(
                 model=model_image,
                 api_key=resolved_key,
             )
-            # 下载保存
+            # 下载保存到 references/
             ts_safe = ts.replace(":", "s")
             output_path = _download_image(
-                image_url, output_dir, prefix=f"reference_image_{ts_safe}"
+                image_url, refs_dir, prefix=f"reference_{ts_safe}"
             )
             elapsed = time.time() - start_time
             print(f"[REF IMAGE] Done in {elapsed:.1f}s → {output_path}")
@@ -271,7 +279,9 @@ def _extract_video_frame(
     Returns:
         提取的帧图片路径
     """
-    frame_path = str(Path(output_dir) / f"frame_{timestamp:.0f}s.png")
+    minutes = int(timestamp) // 60
+    seconds = int(timestamp) % 60
+    frame_path = str(Path(output_dir) / f"frame_{minutes:02d}s{seconds:02d}.png")
 
     cmd = [
         "ffmpeg", "-y",
@@ -510,3 +520,78 @@ def _download_image(url: str, output_dir: str, prefix: str = "reference_image") 
     _logger.info("参考图已保存: %s (%.1fKB)", output_path, file_size_kb)
 
     return output_path
+
+
+# ── CLI 入口 ──────────────────────────────────────────────────────────
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="参考图生成工具 — 基于审核结果和原视频帧生成优化参考图",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例:
+    python tools/reference_image_gen.py \
+        --critique session_20260802/critique_result.json \
+        --video input.mp4 \
+        --scene "场景描述" \
+        --output session_20260802/
+        """,
+    )
+    parser.add_argument("--critique", type=str, required=True, help="审核结果 JSON 文件路径")
+    parser.add_argument("--video", type=str, required=True, help="原视频文件路径")
+    parser.add_argument("--scene", type=str, required=True, help="场景描述文本")
+    parser.add_argument("--output", type=str, default="./output", help="输出目录（session 目录）")
+    parser.add_argument("--model-image", type=str, default=None, help="图片编辑模型（默认从 .env 读取 LLM_MODEL_IMAGE）")
+    parser.add_argument("--env", type=str, default=".env", help=".env 文件路径")
+    args = parser.parse_args()
+
+    # 加载 .env
+    env_path = Path(args.env)
+    if env_path.exists():
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, _, v = line.partition("=")
+                if k not in os.environ:
+                    os.environ[k.strip()] = v.strip()
+
+    # 读取审核结果
+    with open(args.critique, "r", encoding="utf-8") as f:
+        import json as _json
+        critique_data = _json.load(f)
+
+    video_path = str(Path(args.video).expanduser().resolve())
+    if not Path(video_path).exists():
+        print(f"错误: 视频文件不存在: {video_path}")
+        sys.exit(1)
+
+    # 图片模型
+    resolved_model = (
+        args.model_image
+        or os.environ.get("LLM_MODEL_IMAGE")
+        or os.environ.get("IMAGE_MODEL")
+        or "qwen-image-2.0-pro-2026-06-22"
+    )
+    print(f"图片模型: {resolved_model}")
+
+    try:
+        results = generate_all_reference_images(
+            critique_data=critique_data,
+            video_path=video_path,
+            scene_description=args.scene,
+            output_dir=args.output,
+            model_image=resolved_model,
+        )
+        print(f"\n✅ 参考图生成完成: {len(results)} 张")
+        for p in results:
+            print(f"  → {p}")
+    except Exception as e:
+        print(f"\n❌ 参考图生成失败: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

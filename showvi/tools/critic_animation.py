@@ -5,8 +5,11 @@
 可作为 Showvi agent 工具使用，也可独立调用。
 """
 
+import argparse
 import json
 import logging
+import os
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -281,3 +284,59 @@ def timestamp_to_seconds(timestamp: str) -> float:
             return float(timestamp)
         except ValueError:
             return 0.0
+
+
+# ── CLI 入口 ──────────────────────────────────────────────────────────
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="视频审核工具 — 使用 qwen-vl-max 进行 7 维度视频质量评估",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例:
+    python tools/critic_animation.py --video input.mp4 --scene "场景描述" --output critique_result.json
+        """,
+    )
+    parser.add_argument("--video", type=str, required=True, help="视频文件路径")
+    parser.add_argument("--scene", type=str, required=True, help="场景描述文本（审核对照基准）")
+    parser.add_argument("--output", type=str, default="critique_result.json", help="审核结果 JSON 保存路径")
+    parser.add_argument("--model", type=str, default=None, help="审核模型（默认从 .env 读取 LLM_MODEL_VIDEO_CRITIQUE）")
+    parser.add_argument("--timeout", type=int, default=300, help="API 超时时间（秒）")
+    parser.add_argument("--env", type=str, default=".env", help=".env 文件路径")
+    args = parser.parse_args()
+
+    # 加载 .env
+    env_path = Path(args.env)
+    if env_path.exists():
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, _, v = line.partition("=")
+                if k not in os.environ:
+                    os.environ[k.strip()] = v.strip()
+
+    video_path = str(Path(args.video).expanduser().resolve())
+    if not Path(video_path).exists():
+        print(f"错误: 视频文件不存在: {video_path}")
+        sys.exit(1)
+
+    try:
+        result = critique_animation_video(
+            video_path=video_path,
+            scene_description=args.scene,
+            model=args.model,
+            timeout_seconds=args.timeout,
+            output_path=args.output,
+        )
+        print(f"\n✅ 审核完成: {result['overall_score']}/10 ({result['recommendation']})")
+        print(f"报告: {args.output}")
+    except Exception as e:
+        print(f"\n❌ 审核失败: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
