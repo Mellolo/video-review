@@ -1,3 +1,6 @@
+> **本仓库的视频审核用法**：请先阅读仓库根目录的 [`../README.md`](../README.md)。  
+> 下文是上游 **Showvi 视频生成系统**文档；定制插件与审核工具索引见 [`README_CUSTOM.md`](README_CUSTOM.md)。
+
 <p align="center">
   <img src="assets/readme/hero-banner.png" alt="Showvi AI — From Idea to Film in One Click" width="100%">
 </p>
