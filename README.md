@@ -15,7 +15,7 @@
 | 系统工具 | `ffmpeg`、`ffprobe` 在 `PATH` 中 |
 | API Key | 阿里云百炼 DashScope Key，写在 `showvi/.env` 的 `LLM_API_KEY` |
 | 视频 | 本地文件（如 `.mp4`） |
-| 场景描述 | 一段文字，作为审核对照基准（见下方说明） |
+| 场景描述 | 一段文字，作为审核对照基准（不提供时自动生成） |
 
 获取 API Key：[百炼控制台](https://dashscope.console.aliyun.com/) → API Key 管理。
 
@@ -40,7 +40,7 @@ python run_critique_and_ref.py \
     --output ../视频审核/测试视频1
 ```
 
-**完整流程（不提供场景描述，模型自主看视频判断）：**
+**完整流程（不提供场景描述，自动 Phase 0 生成）：**
 
 ```bash
 python run_critique_and_ref.py \
@@ -74,7 +74,7 @@ python run_critique_and_ref.py \
 
 ## 场景描述（`--scene`）怎么写
 
-`--scene` 是**可选**对照基准。提供后，模型会拿它和画面逐项比对（尤其影响「场景还原度」）；**不提供时，模型会基于视频画面本身自主判断质量**。
+`--scene` 是**可选**对照基准。提供后，模型会拿它和画面逐项比对（尤其影响「场景还原度」）；**不提供时，系统会自动进入 Phase 0，让模型看视频生成场景描述，再拿这个描述做后续审核的对照基准**。
 
 建议写清：
 
@@ -106,10 +106,11 @@ python run_critique_and_ref.py \
 
 ## 流程与产物
 
-编排器 `run_critique_and_ref.py` 串联三步：
+编排器 `run_critique_and_ref.py` 串联四步：
 
 | 阶段 | 工具 | 产物 |
 |------|------|------|
+| 0 场景描述生成 | 自动生成（不提供 `--scene` 时） | `场景描述.txt` |
 | 1 视频审核 | `tools/critic_animation.py` | `审核结果.json` |
 | 2 参考图 | `tools/reference_image_gen.py` | `原帧/`、`参考图/` |
 | 3 汇总报告 | `tools/report_generator.py` | `审核报告.md` |
@@ -187,7 +188,7 @@ python run_critique_and_ref.py --video ... --scene "..." --output ... --strictne
 | 参数 | 必填 | 说明 |
 |------|:----:|------|
 | `--video` | ✅ | 视频文件路径 |
-| `--scene` | | 场景描述文本（可选；省略时模型自主看视频判断） |
+| `--scene` | | 场景描述文本（可选；省略时自动通过 Phase 0 生成） |
 | `--output` | | 产出父目录；默认取视频所在目录；其下自动建 `审核_*` |
 | `--session` | | 已有 session 路径（续跑时用） |
 | `--model` | | 审核模型，默认读 `.env` |
