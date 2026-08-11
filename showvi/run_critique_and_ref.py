@@ -179,7 +179,7 @@ def main():
         """,
     )
     parser.add_argument("--video", type=str, required=True, help="视频文件路径")
-    parser.add_argument("--scene", type=str, required=True, help="场景描述文本")
+    parser.add_argument("--scene", type=str, required=False, default="", help="场景描述文本（可选；留空时模型自主看视频判断）")
     parser.add_argument("--output", type=str, default=None, help="视频所在目录（自动创建 session 子目录）")
     parser.add_argument("--session", type=str, default=None, help="指定已有 session 目录（用于续跑）")
     parser.add_argument("--model", type=str, default=None, help="视频审核模型")

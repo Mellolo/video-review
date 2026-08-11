@@ -33,10 +33,18 @@ source .venv/bin/activate
 mkdir -p ../视频审核/测试视频1
 # 将 your_video.mp4 拷到 ../视频审核/测试视频1/
 
-# 完整流程：审核 → 参考图 → 汇总报告
+# 完整流程：审核 → 参考图 → 汇总报告（带场景描述）
 python run_critique_and_ref.py \
     --video  ../视频审核/测试视频1/your_video.mp4 \
     --scene  "角色：小明，穿红色外套。场景：雨夜街道。动作：小明撑伞穿过斑马线，镜头跟随。" \
+    --output ../视频审核/测试视频1
+```
+
+**完整流程（不提供场景描述，模型自主看视频判断）：**
+
+```bash
+python run_critique_and_ref.py \
+    --video  ../视频审核/测试视频1/your_video.mp4 \
     --output ../视频审核/测试视频1
 ```
 
@@ -66,7 +74,7 @@ python run_critique_and_ref.py \
 
 ## 场景描述（`--scene`）怎么写
 
-`--scene` 是**必填**对照基准，模型会拿它和画面逐项比对（尤其影响「场景还原度」）。
+`--scene` 是**可选**对照基准。提供后，模型会拿它和画面逐项比对（尤其影响「场景还原度」）；**不提供时，模型会基于视频画面本身自主判断质量**。
 
 建议写清：
 
@@ -179,7 +187,7 @@ python run_critique_and_ref.py --video ... --scene "..." --output ... --strictne
 | 参数 | 必填 | 说明 |
 |------|:----:|------|
 | `--video` | ✅ | 视频文件路径 |
-| `--scene` | ✅ | 场景描述文本 |
+| `--scene` | | 场景描述文本（可选；省略时模型自主看视频判断） |
 | `--output` | | 产出父目录；默认取视频所在目录；其下自动建 `审核_*` |
 | `--session` | | 已有 session 路径（续跑时用） |
 | `--model` | | 审核模型，默认读 `.env` |

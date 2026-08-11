@@ -302,7 +302,18 @@ def build_animation_critique_prompt(
 - minor_issues 至少列出 {cfg['min_minor']} 个问题
 - 每个问题都要有精确的时间戳和具体描述"""
 
-    prompt = f"""{cfg['opening']}
+    # 当无场景描述时，调整 opening 和场景描述块
+    has_scene = bool(scene_description and scene_description.strip())
+    opening = cfg["opening"]
+    if not has_scene:
+        opening = opening.replace("并与场景描述进行对比，", "直接基于视频内容本身，").replace("并与场景描述逐项对比，", "直接基于视频内容本身，")
+
+    if has_scene:
+        scene_block = f"""# 场景描述（评估对照基准）\n{scene_description}"""
+    else:
+        scene_block = """# 场景描述（评估对照基准）\n未提供外部场景描述。请直接基于视频画面本身进行客观质量评估，从画面内容中自主识别角色、场景、动作、道具及问题。"""
+
+    prompt = f"""{opening}
 
 {_DIMENSIONS_BLOCK}
 
@@ -321,7 +332,6 @@ def build_animation_critique_prompt(
 
 {cfg['notes']}
 
-# 场景描述（评估对照基准）
-{scene_description}"""
+{scene_block}"""
 
     return prompt

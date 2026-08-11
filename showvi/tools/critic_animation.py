@@ -123,12 +123,19 @@ def critique_animation_video(
     # 构建审核 prompt
     system_prompt = build_animation_critique_prompt(scene_description, strictness=strictness)
 
-    user_message = (
-        f"请审核以下动画视频。\n\n"
-        f"场景描述:\n{scene_description}\n\n"
-        f"请分析整个视频内容，按 7 大维度评分，标注关键问题时间戳。"
-        f"请仅输出有效的 JSON 对象，不要包含其他文字。"
-    )
+    if scene_description and scene_description.strip():
+        user_message = (
+            f"请审核以下动画视频。\n\n"
+            f"场景描述:\n{scene_description}\n\n"
+            f"请分析整个视频内容，按 7 大维度评分，标注关键问题时间戳。"
+            f"请仅输出有效的 JSON 对象，不要包含其他文字。"
+        )
+    else:
+        user_message = (
+            f"请自主审核以下动画视频，无需额外场景描述作为对照基准。\n\n"
+            f"请直接分析视频内容本身，按 7 大维度评分，标注关键问题时间戳。"
+            f"请仅输出有效的 JSON 对象，不要包含其他文字。"
+        )
 
     resolved_model = model or "qwen-vl-max"
 
@@ -302,7 +309,7 @@ def main():
         """,
     )
     parser.add_argument("--video", type=str, required=True, help="视频文件路径")
-    parser.add_argument("--scene", type=str, required=True, help="场景描述文本（审核对照基准）")
+    parser.add_argument("--scene", type=str, required=False, default="", help="场景描述文本（审核对照基准；留空时模型自主看视频判断）")
     parser.add_argument("--output", type=str, default="审核结果.json", help="审核结果 JSON 保存路径")
     parser.add_argument("--model", type=str, default=None, help="审核模型（默认从 .env 读取 LLM_MODEL_VIDEO_CRITIQUE）")
     parser.add_argument("--timeout", type=int, default=300, help="API 超时时间（秒）")
