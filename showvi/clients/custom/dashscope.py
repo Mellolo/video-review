@@ -48,7 +48,9 @@ class DashScopeClient:
     支持的模型:
       - qwen-vl-max      (视频审核/分析)
       - qwen-vl-plus      (轻量视频理解)
-      - qwen3.7-plus      (纯文本)
+      - qwen3.8-max       (原生全模态，支持视频/图片/文本)
+      - qwen3.7-plus      (原生多模态，支持视频)
+      - qwen3.7-max       (纯文本，不支持视频)
       - qwen-turbo/max    (纯文本)
     """
 
@@ -123,6 +125,7 @@ class DashScopeClient:
             max_tokens=max_tokens,
             response_format=response_format,
             response_schema=response_schema,
+            timeout_seconds=timeout_seconds or self.DEFAULT_TIMEOUT_SECONDS,
         )
         response = self._call_with_retry(
             lambda: self._client.chat.completions.create(**kwargs),
@@ -177,6 +180,7 @@ class DashScopeClient:
             temperature=temperature,
             response_format=response_format,
             response_schema=response_schema,
+            timeout_seconds=timeout_seconds or self.IMAGE_TIMEOUT_SECONDS,
         )
         response = self._call_with_retry(
             lambda: self._client.chat.completions.create(**kwargs),
@@ -251,6 +255,7 @@ class DashScopeClient:
             temperature=temperature,
             response_format=response_format,
             response_schema=response_schema,
+            timeout_seconds=timeout_seconds or self.VIDEO_TIMEOUT_SECONDS,
         )
         response = self._call_with_retry(
             lambda: self._client.chat.completions.create(**api_kwargs),
@@ -278,6 +283,7 @@ class DashScopeClient:
             temperature=temperature,
             max_tokens=max_tokens,
             response_format=response_format,
+            timeout_seconds=timeout_seconds or self.DEFAULT_TIMEOUT_SECONDS,
         )
         response = self._call_with_retry(
             lambda: self._client.chat.completions.create(**kwargs),
@@ -297,6 +303,7 @@ class DashScopeClient:
         max_tokens: Optional[int] = None,
         response_format: Optional[str] = None,
         response_schema: Optional[Dict[str, Any]] = None,
+        timeout_seconds: Optional[int] = None,
     ) -> Dict[str, Any]:
         """构建 OpenAI API 调用参数。"""
         kwargs: Dict[str, Any] = {
@@ -309,6 +316,8 @@ class DashScopeClient:
         # DashScope 支持 json_object 响应格式
         if response_schema or response_format == "json_object":
             kwargs["response_format"] = {"type": "json_object"}
+        if timeout_seconds:
+            kwargs["timeout"] = float(timeout_seconds)
         return kwargs
 
     def _call_with_retry(
