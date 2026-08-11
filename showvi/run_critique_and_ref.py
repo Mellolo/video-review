@@ -157,6 +157,7 @@ def run_phase3_report(
             session_dir=session_dir,
             video_path=video_path,
             scene_description=scene_description,
+            with_fix_instructions=True,
         )
         print(f"报告已生成 → {report_path}")
         return report_path
